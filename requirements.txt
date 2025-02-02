@@ -1,0 +1,12 @@
+flask
+flask-smorest
+python-dotenv
+sqlalchemy
+flask-sqlalchemy
+openpyxl
+reportlab
+marshmallow
+assertpy
+marshmallow_sqlalchemy 
+flask-cors
+Flask-Migrate
