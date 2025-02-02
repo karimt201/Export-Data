@@ -4,7 +4,7 @@ import exceptions
 import models as md
 
 
-class _CrudOperator:
+class CrudOperator:
   def __init__(self, model, session=None):
     self.model = model
     self.session = session or db.session
@@ -41,7 +41,7 @@ class _CrudOperator:
   
 class database_handle:
   def __init__(self):
-    self.data= _CrudOperator(md.CandidateModel)
+    self.data= CrudOperator(md.CandidateModel)
     
   def get_all(self):
     records = self.data.get_all()

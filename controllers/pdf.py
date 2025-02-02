@@ -31,12 +31,12 @@ class PdfController:
   def create_pdf(self):
     try:
       candidate = dh.database_handle().get_all()
-      Serializer = sr._DataSerializer(candidate)._All_serialize()
+      Serializer = sr._DataSerializer(candidate)._data_serialize()
       row_data = DW.RowExcelData(Serializer)
       Pdf_file = PDFCreator()
       manger = DW.DataManger(Pdf_file)
       manger.save(row_data,"Export_All_candidate.pdf") 
-      return Serializer,http.HTTPStatus.OK
+      return sr._DataSerializer(candidate,"Export_All_candidate.pdf")._All_serialize(),http.HTTPStatus.OK
     except exceptions._NotFoundError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
 
@@ -44,12 +44,12 @@ class PdfController:
   def create_pdf_paginated(self):
     try:
       candidate = dh.database_handle().get_paginated(page=1,per_page=3)
-      Serializer = sr._DataSerializer(candidate)._All_serialize()
+      Serializer = sr._DataSerializer(candidate)._data_serialize()
       row_data = DW.RowExcelData(Serializer)
       Pdf_file = PDFCreator()
       manger = DW.DataManger(Pdf_file)
       manger.save(row_data,"Export_candidate_paginated.pdf") 
-      return Serializer,http.HTTPStatus.OK
+      return sr._DataSerializer(candidate,"Export_candidate_paginated.pdf")._All_serialize(),http.HTTPStatus.OK
     except exceptions._NotFoundError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
     
@@ -57,11 +57,11 @@ class PdfController:
   def create_pdf_record(self,candidate_id):
     try:
       candidate = dh.database_handle().get(candidate_id)
-      Serializer = sr._DataSerializer(candidate)._All_serialize()
+      Serializer = sr._DataSerializer(candidate)._data_serialize()
       row_data = DW.RowExcelData([Serializer])
       Pdf_file = PDFCreator()
       manger = DW.DataManger(Pdf_file)
       manger.save(row_data,"Export_One_candidate.pdf") 
-      return Serializer,http.HTTPStatus.OK
+      return sr._DataSerializer(candidate,"Export_One_candidate.pdf")._All_serialize(),http.HTTPStatus.OK
     except exceptions._NotFoundError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
