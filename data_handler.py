@@ -39,21 +39,21 @@ class _CrudOperator:
     self.session.commit()
     return new_candidates
   
-class _database_handle:
+class database_handle:
   def __init__(self):
     self.data= _CrudOperator(md.CandidateModel)
     
-  def _get_all(self):
+  def get_all(self):
     records = self.data.get_all()
     if not records : raise exceptions._NotFoundError("Records does not exist")
     return records
   
-  def _get_paginated(self,page,per_page):
+  def get_paginated(self,page,per_page):
     pagination = self.data.get_paginated(page,per_page)
     if not pagination.items : raise exceptions._NotFoundError("No Records in this Page")
     return pagination.items
   
-  def _get(self,_id):
+  def get(self,_id):
     record = self.data.get_one(_id)
     if not record : raise exceptions._NotFoundError("Record does not exist")
     return record
@@ -67,7 +67,7 @@ class _database_handle:
     add_records = self.data.post_one(request_body)
     return add_records
   
-  def _post_all_data_types(self,request_data):
+  def post_all_data_types(self,request_data):
     if isinstance(request_data,list):
       candidates = self.list_data(request_data)
     elif isinstance(request_data,dict) :

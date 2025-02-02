@@ -30,7 +30,7 @@ class PdfController:
 
   def create_pdf(self):
     try:
-      candidate = dh._database_handle()._get_all()
+      candidate = dh.database_handle().get_all()
       Serializer = sr._DataSerializer(candidate)._All_serialize()
       row_data = DW.RowExcelData(Serializer)
       Pdf_file = PDFCreator()
@@ -43,7 +43,7 @@ class PdfController:
 
   def create_pdf_paginated(self):
     try:
-      candidate = dh._database_handle()._get_paginated(page=1,per_page=3)
+      candidate = dh.database_handle().get_paginated(page=1,per_page=3)
       Serializer = sr._DataSerializer(candidate)._All_serialize()
       row_data = DW.RowExcelData(Serializer)
       Pdf_file = PDFCreator()
@@ -56,7 +56,7 @@ class PdfController:
           
   def create_pdf_record(self,candidate_id):
     try:
-      candidate = dh._database_handle()._get(candidate_id)
+      candidate = dh.database_handle().get(candidate_id)
       Serializer = sr._DataSerializer(candidate)._All_serialize()
       row_data = DW.RowExcelData([Serializer])
       Pdf_file = PDFCreator()
