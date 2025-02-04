@@ -2,8 +2,8 @@ import re
 import exceptions
 
 class _DataValidator():  
-  def __init__(self,json_body):
-    self.json_body=json_body
+  def __init__(self,json_body=None):
+    self.json_body= json_body
     
   def _All_validate(self):
     if isinstance(self.json_body,list):
@@ -20,39 +20,39 @@ class _DataValidator():
     self.is_valid_status(body.get('status'))
   
   def is_valid_name(self,name):
-    if not name: raise exceptions.RequiredInputError('Name is required')
+    if not name: raise exceptions._RequiredInputError('Name is required')
     self._is_valid_name(name)
   
   def _is_valid_name(self,name):
-    if not isinstance(name, str): raise exceptions.InvalidInputError('Name is not valid string')
+    if not isinstance(name, str): raise exceptions._InvalidInputError('Name is not valid string')
     
   def is_valid_email(self,email):
-    if not email: raise exceptions.RequiredInputError('Email is required')
+    if not email: raise exceptions._RequiredInputError('Email is required')
     self._is_valid_email(email)
     
   def _is_valid_email(self,email):
-    if not re.match(r"[^@]+@[^@]+\.[^@]+",email): raise exceptions.InvalidInputError('Email is not valid')
+    if not re.match(r"[^@]+@[^@]+\.[^@]+",email): raise exceptions._InvalidInputError('Email is not valid')
   
   def is_valid_compatibility(self,compatibility):
     if compatibility is not None:
-      if not compatibility: raise exceptions.RequiredInputError('Compatibility is required')
+      if not compatibility: raise exceptions._RequiredInputError('Compatibility is required')
       self._is_valid_compatibility(compatibility)
     else:
       return compatibility
     
   def _is_valid_compatibility(self,compatibility):
-    if not isinstance(compatibility, (int)): raise exceptions.InvalidInputError('Compatibility must be a number')
+    if not isinstance(compatibility, (int)): raise exceptions._InvalidInputError('Compatibility must be a number')
   
   def is_valid_sourcing(self,sourcing):
-    if not sourcing: raise exceptions.RequiredInputError('Sourcing is required')
+    if not sourcing: raise exceptions._RequiredInputError('Sourcing is required')
     self._is_valid_sourcing(sourcing)
     
   def _is_valid_sourcing(self,sourcing):
-    if not isinstance(sourcing,str): raise exceptions.InvalidInputError('Sourcing is not valid string')
+    if not isinstance(sourcing,str): raise exceptions._InvalidInputError('Sourcing is not valid string')
     
   def is_valid_status(self,status):
-    if not status: raise exceptions.RequiredInputError('Status is required')
+    if not status: raise exceptions._RequiredInputError('Status is required')
     self._is_valid_status(status)
     
   def _is_valid_status(self,status):
-    if not isinstance(status,str): raise exceptions.InvalidInputError('Status is not valid string')
+    if not isinstance(status,str): raise exceptions._InvalidInputError('Status is not valid string')

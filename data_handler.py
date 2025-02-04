@@ -13,35 +13,27 @@ class CrudOperator:
     return self.model.query.all()
               
   def get_one(self, _id):
-    return self.model.query.get(_id)
+    return self.session.get(self.model,_id)
   
   def get_paginated(self,page,per_page):
-    page = request.args.get("page",page,type=int)
-    per_page = request.args.get("per_page",per_page,type=int)
-    return self.model.query.paginate(page=page,per_page=per_page,error_out=False)
+    page = page or request.args.get("page",page,type=int)
+    per_page = per_page or  request.args.get("per_page",per_page,type=int)
+    return self.model.query.paginate(page,per_page,error_out=False)
   
-  def unique_fields(self,existing_field):
-    return self.model.query.filter_by(existing_field).first()
-
   def post_list(self,request_data):
-    new_candidates = []
     for data in request_data:
-      new_candidate = self.model(data)
-      self.session.add(new_candidate)
-      new_candidates.append(new_candidate)
+      self.session.add(self.model(data))
     self.session.commit()
-    return new_candidates
+    return request_data
   
   def post_one(self,request_data):
-    new_candidate = self.model(request_data)
-    db.session.add(new_candidate)
-    new_candidates = [new_candidate]
+    self.session.add(self.model(request_data))
     self.session.commit()
-    return new_candidates
-  
+    return request_data
+
 class database_handle:
-  def __init__(self):
-    self.data= CrudOperator(md.CandidateModel)
+  def __init__(self,date_test=None):
+    self.data= date_test or CrudOperator(md.CandidateModel)
     
   def get_all(self):
     records = self.data.get_all()
@@ -52,6 +44,9 @@ class database_handle:
     pagination = self.data.get_paginated(page,per_page)
     if not pagination.items : raise exceptions._NotFoundError("No Records in this Page")
     return pagination.items
+  
+  def get_paginated_for_test(self):
+    return self.get_paginated(10,10)
   
   def get(self,_id):
     record = self.data.get_one(_id)

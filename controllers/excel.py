@@ -26,22 +26,22 @@ class ExcelController:
       row_data = DW.RowExcelData(Serializer)
       xlsx_file = ExcelCreator()
       manger = DW.DataManger(xlsx_file)
-      manger.save(row_data,"Export_All_candidate.xlsx") 
-      return sr._DataSerializer(candidate,"Export_All_candidate.xlsx")._All_serialize(),http.HTTPStatus.OK
+      self.create_excel_manger(manger,row_data,"Export_All_candidate.xlsx") 
+      return self.create_excel_Serializer(candidate,"Export_All_candidate.xlsx")
     except exceptions._NotFoundError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
 
-  def create_excel_pagenited(self):
-    try:
-      candidate = dh.database_handle().get_paginated(page=1,per_page=3)
-      Serializer = sr._DataSerializer(candidate)._data_serialize()
-      row_data = DW.RowExcelData(Serializer)
-      xlsx_file = ExcelCreator()
-      manger = DW.DataManger(xlsx_file)
-      manger.save(row_data,"Export_candidate_paginated.xlsx") 
-      return sr._DataSerializer(candidate,"Export_candidate_paginated.xlsx")._All_serialize(),http.HTTPStatus.OK
-    except exceptions._NotFoundError as exc:
-      return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
+  # def create_excel_pagenited(self):
+  #   try:
+  #     candidate = dh.database_handle().get_paginated(page=1,per_page=3)
+  #     Serializer = sr._DataSerializer(candidate)._data_serialize()
+  #     row_data = DW.RowExcelData(Serializer)
+  #     xlsx_file = ExcelCreator()
+  #     manger = DW.DataManger(xlsx_file)
+  #     manger.save(row_data,"Export_candidate_paginated.xlsx") 
+  #     return sr._DataSerializer(candidate,"Export_candidate_paginated.xlsx")._All_serialize(),http.HTTPStatus.OK
+  #   except exceptions._NotFoundError as exc:
+  #     return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
     
   def create_excel_record(self,candidate_id):
     try:
@@ -50,7 +50,14 @@ class ExcelController:
       row_data = DW.RowExcelData([Serializer])
       xlsx_file = ExcelCreator()
       manger = DW.DataManger(xlsx_file)
-      manger.save(row_data,"Export_One_candidate.xlsx") 
-      return sr._DataSerializer(candidate,"Export_One_candidate.xlsx")._All_serialize(),http.HTTPStatus.OK
+      self.create_excel_manger(manger,row_data,"Export_One_candidate.xlsx") 
+      return self.create_excel_Serializer(candidate,"Export_One_candidate.xlsx")
     except exceptions._NotFoundError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
+  
+  def create_excel_manger(self,manger,row_data,filename):
+    return manger.save(row_data,filename)
+  
+  def create_excel_Serializer(self,candidate,filename):
+    return sr._DataSerializer(candidate,filename)._All_serialize(),http.HTTPStatus.OK
+  

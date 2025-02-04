@@ -35,23 +35,23 @@ class PdfController:
       row_data = DW.RowExcelData(Serializer)
       Pdf_file = PDFCreator()
       manger = DW.DataManger(Pdf_file)
-      manger.save(row_data,"Export_All_candidate.pdf") 
-      return sr._DataSerializer(candidate,"Export_All_candidate.pdf")._All_serialize(),http.HTTPStatus.OK
+      self.create_pdf_manger(manger,row_data,"Export_All_candidate.pdf") 
+      return self.create_pdf_Serializer(candidate,"Export_All_candidate.pdf")
     except exceptions._NotFoundError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
 
 
-  def create_pdf_paginated(self):
-    try:
-      candidate = dh.database_handle().get_paginated(page=1,per_page=3)
-      Serializer = sr._DataSerializer(candidate)._data_serialize()
-      row_data = DW.RowExcelData(Serializer)
-      Pdf_file = PDFCreator()
-      manger = DW.DataManger(Pdf_file)
-      manger.save(row_data,"Export_candidate_paginated.pdf") 
-      return sr._DataSerializer(candidate,"Export_candidate_paginated.pdf")._All_serialize(),http.HTTPStatus.OK
-    except exceptions._NotFoundError as exc:
-      return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
+  # def create_pdf_paginated(self):
+  #   try:
+  #     candidate = dh.database_handle().get_paginated(page=1,per_page=3)
+  #     Serializer = sr._DataSerializer(candidate)._data_serialize()
+  #     row_data = DW.RowExcelData(Serializer)
+  #     Pdf_file = PDFCreator()
+  #     manger = DW.DataManger(Pdf_file)
+  #     manger.save(row_data,"Export_candidate_paginated.pdf") 
+  #     return sr._DataSerializer(candidate,"Export_candidate_paginated.pdf")._All_serialize(),http.HTTPStatus.OK
+  #   except exceptions._NotFoundError as exc:
+  #     return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
     
           
   def create_pdf_record(self,candidate_id):
@@ -61,7 +61,15 @@ class PdfController:
       row_data = DW.RowExcelData([Serializer])
       Pdf_file = PDFCreator()
       manger = DW.DataManger(Pdf_file)
-      manger.save(row_data,"Export_One_candidate.pdf") 
-      return sr._DataSerializer(candidate,"Export_One_candidate.pdf")._All_serialize(),http.HTTPStatus.OK
+      self.create_pdf_manger(manger,row_data,"Export_One_candidate.pdf") 
+      return self.create_pdf_Serializer(candidate,"Export_One_candidate.pdf")
     except exceptions._NotFoundError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND  
+
+
+  def create_pdf_manger(self,manger,row_data,filename):
+    return manger.save(row_data,filename)
+  
+  def create_pdf_Serializer(self,candidate,filename):
+    return sr._DataSerializer(candidate,filename)._All_serialize(),http.HTTPStatus.OK
+  

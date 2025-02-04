@@ -15,7 +15,6 @@ class RowExcelData:
     def rows(self):
         return [list(row.values()) for row in self._data]
     
-    
 class DataManger:
     
     def __init__(self, writer : DataWriter):
@@ -24,7 +23,6 @@ class DataManger:
     def save(self,data,filename):
         return self.writer.write_export_files(data,filename)
     
-
 class Error(DataWriter):
     
     def read(self,filename):

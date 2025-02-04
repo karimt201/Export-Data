@@ -9,11 +9,12 @@ class CandidateController:
   
   def __init__(self,candidate_test=None):
     self.request_data = candidate_test or request.get_json()
+    
   def candidate_creator(self):
     try:
       vd._DataValidator(self.request_data)._All_validate()
       new_candidates = dh.database_handle().post_all_data_types(self.request_data)
-      return sr._DataSerializer(new_candidates)._All_serialize(), http.HTTPStatus.CREATED
+      return sr._DataSerializer(new_candidates)._request_serialize(), http.HTTPStatus.CREATED
     except exceptions._RequiredInputError as exc:
       return sr._DataSerializer()._core_error_serialize(exc,http.HTTPStatus.NOT_FOUND)  
     except exceptions._InvalidInputError as exc:

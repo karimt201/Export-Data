@@ -3,7 +3,7 @@ from db import db
 import models
 import resourses as route
 import flask_cors as cr
-# import flask_migrate as mg
+import flask_migrate as mg
 
 app = Flask(__name__)
 
@@ -15,11 +15,10 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
 
-# migrate = mg.Migrate(app,db)
+migrate = mg.Migrate(app,db)
 
 with app.app_context():
     db.create_all()
-
 
 app.register_blueprint(route.candidate_blp)
 app.register_blueprint(route.excel_blp)
