@@ -1,26 +1,28 @@
+import os
+
 from flask import Flask
-from db import db
 import models
-import resourses as route
+import routes as route
 import flask_cors as cr
-import flask_migrate as mg
+import config as configurations
+
 
 app = Flask(__name__)
 
+app.config.from_object(configurations.LocalTestingConfig)
 cr.CORS(app)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-db.init_app(app)
-
-
-migrate = mg.Migrate(app, db)
-
+models.db.init_app(app)
+models.migrate.init_app(app, models.db)
 with app.app_context():
-    db.create_all()
+    models.db.create_all()
+
 
 app.register_blueprint(route.candidate_blp)
 app.register_blueprint(route.excel_blp)
 app.register_blueprint(route.csv_blp)
 app.register_blueprint(route.pdf_blp)
+
+
+if __name__ == "__main__":
+    app.run()

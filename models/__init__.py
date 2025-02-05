@@ -1,4 +1,9 @@
-from db import db
+import flask_sqlalchemy as alchemy
+import flask_migrate as fl_mg
+
+
+db = alchemy.SQLAlchemy()
+migrate = fl_mg.Migrate()
 
 
 class CandidateModel(db.Model):
@@ -11,14 +16,3 @@ class CandidateModel(db.Model):
     sourcing = db.Column(db.String(80), unique=False, nullable=True)
     status = db.Column(db.String(80), unique=False, nullable=True)
 
-    # def __init__(self,data):
-    #     self.name = data.get('name')
-    #     self.email = data.get('email')
-    #     self.compatibility = data.get('compatibility')
-    #     self.sourcing = data.get('sourcing')
-    #     self.status = data.get('status')
-
-    # @staticmethod
-    # def query_all():
-    #   with app.app_context():
-    #     return CandidateModel.query.all()
