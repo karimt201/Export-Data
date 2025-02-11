@@ -27,7 +27,7 @@ class CrudOperator:
     
     
     def create_many(self, request_data):
-        filtered_data = self._filter(request_data)
+        filtered_data = self._filter_data(request_data)
         record = self.model(**filtered_data)
         self.session.add(record)
         # self.session.commit()
@@ -42,6 +42,12 @@ class CrudOperator:
         for attr in data.keys():
             if not hasattr(self.model, attr): raise exceptions._InvalidFieldError(f"{attr} field is not valid")
         return data
+    
+    def _filter_data(self, data):
+        filter_data={}
+        for key,value in data.items():
+            if  hasattr(self.model, key): filter_data[key]=value
+        return filter_data
     
     def filter_data(self,name):
         return self.model.query.filter_by(name=name).first()

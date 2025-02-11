@@ -34,8 +34,11 @@ class _CreateExtensionController(CreateExtension):
 
     @property
     def request(self, request_test=None):
-        return request_test or fk.request.args.get
+        return request_test or fk.request.args
 
+    @property
+    def request_body(self, request_test=None):
+        return request_test or fk.request.get_json()
     @property
     def data_serializer(self, serializer_test=None):
         return serializer_test or _DataSerializer
@@ -45,9 +48,9 @@ class _CreateExtensionController(CreateExtension):
         return row_excel_data_test or writer.RowExcelData
 
     def prepare_data(self):
-        page = self.request("page", type=int)
-        per_page = self.request("per_page", 3, type=int)
-        candidate_id = self.request("candidateId")
+        page = self.request.get("page", type=int)
+        per_page = self.request.get("per_page", 3, type=int)
+        candidate_id = self.request_body.get("candidate_id")
         if candidate_id:
             self.candidate = self.handler.get(candidate_id)
         elif page:
@@ -95,41 +98,20 @@ class _CandidateController:
             if operation:
                 _CreateExtensionValidator(self.request_body).All_validate()
                 record = self._extension_creator(operation).export(file_name)
-                return (
-                    _Serializer(record, file_name).All_serialize(),
-                    http.HTTPStatus.CREATED,
-                )
+                return _Serializer(record, file_name).All_serialize(),http.HTTPStatus.CREATED,
             elif info:
                 return ci._Candidateinfo(info,self.request_body).post()
             else:
                 _AddCandidateValidator(self.request_body).All_validate()
                 record = self.handler.post(self.request_body)
-                return (
-                    _Serializer(record, file_name).All_serialize(),
-                    http.HTTPStatus.CREATED,
-                )
-
+                return _Serializer(record, file_name).All_serialize(),http.HTTPStatus.CREATED,
         except exceptions._RequiredInputError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),
-                http.HTTPStatus.NOT_FOUND,
-            )
-
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
         except exceptions._InvalidInputError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(
-                    exc, http.HTTPStatus.BAD_REQUEST
-                ),
-                http.HTTPStatus.BAD_REQUEST,
-            )
-
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
         except exceptions._InvalidFieldError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(
-                    exc, http.HTTPStatus.BAD_REQUEST
-                ),
-                http.HTTPStatus.BAD_REQUEST,
-            )
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+
         except exceptions._NotFoundError as exc:
             return (
                 _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),

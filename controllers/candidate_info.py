@@ -30,6 +30,10 @@ class _AddCandidateSkillsController(info):
         return validator_test or _AddSkillsValidator()
 
     
+    def request(self, request_test=None):
+        return request_test or fk.request.get_json()
+
+    
     def skills_handler(self, skills_handler_test=None):
         return skills_handler_test or _SkillsBusinessHandler()
 
@@ -44,12 +48,13 @@ class _AddCandidateSkillsController(info):
     def date_validator(self,Validator_test=None):
         return self.validator(Validator_test).validate(self.body_request)
 
-    def date_handler(self, candidate_id,handler_test=None):
+    def date_handler(self,request_test=None,handler_test=None):
+        candidate_id = self.request(request_test).get('candidate_id')
         self.candidate = self.candidate_handler(handler_test).get(candidate_id)
         self.skill = self.skills_handler(handler_test).post(self.body_request,candidate_id)
         return self.skill
     
-    def date_serializer(self,serializer_test):
+    def date_serializer(self,serializer_test=None):
         return self.serializer(serializer_test).serialize(self.skill, self.candidate)
 
 
@@ -79,9 +84,9 @@ class _AddCandidateApplicationController(info):
     def date_validator(self,validator_test=None):
         return self.validator(validator_test).validate(self.body_request)
 
-    def date_handler(self, candidate_id,handler_test=None):
-        self.response = self.application_handler(handler_test).post(self.body_request, candidate_id)
-        self.candidate_data = self.candidate_handler(handler_test).get(candidate_id)
+    def date_handler(self,handler_test=None):
+        self.response = self.application_handler(handler_test).post(self.body_request)
+        self.candidate_data = self.candidate_handler(handler_test).get(self.response.candidate_id)
         
     def date_serializer(self,serializer_test=None):
         return self.serializer(serializer_test).serialize(self.response, self.candidate_data)
@@ -113,9 +118,9 @@ class _AddCandidateExperienceController(info):
     def date_validator(self,validator_test):
         return self.validator(validator_test).validate(self.body_request)
 
-    def date_handler(self, candidate_id,handler_test=None):
-        self.response = self.experience_handler(handler_test).post(self.body_request, candidate_id)
-        self.candidate_data =  self.candidate_handler(handler_test).get(candidate_id)
+    def date_handler(self,handler_test=None):
+        self.response = self.experience_handler(handler_test).post(self.body_request)
+        self.candidate_data =  self.candidate_handler(handler_test).get(self.response.candidate_id)
 
     def date_serializer(self,serializer_test):
         return self.serializer(serializer_test).serialize(self.response,self.candidate_data)
@@ -147,9 +152,9 @@ class _AddCandidateEducationController(info):
     def date_validator(self,validator_test=None):
         return self.validator(validator_test).validate(self.body_request)
 
-    def date_handler(self, candidate_id,handler_test):
-        self.response = self.education_handler(handler_test).post(self.body_request, candidate_id)
-        self.candidate_data =  self.candidate_handler(handler_test).get(candidate_id)
+    def date_handler(self,handler_test=None):
+        self.response = self.education_handler(handler_test).post(self.body_request)
+        self.candidate_data =  self.candidate_handler(handler_test).get(self.response.candidate_id)
 
     def date_serializer(self,serializer_test=None):
         return self.serializer(serializer_test).serialize(self.response,self.candidate_data)
@@ -171,9 +176,6 @@ class _Candidateinfo:
         self.request_body = request_body
 
     
-    def request(self, request_test=None):
-        return request_test or fk.request.args
-    
     def candidates_info(self, candidate_info_test=None):
         return candidate_info_test or CandidatesInfo
     
@@ -183,10 +185,9 @@ class _Candidateinfo:
         return self.candidate_info_return
 
     def post(self,request_test=None,info_test=None):
-        candidate_id = self.request(request_test).get("candidate_id")
         info_obj = self.info(info_test)
         info_obj.date_validator()
-        info_obj.date_handler(candidate_id)
+        info_obj.date_handler()
         return info_obj.date_serializer()
 
 
@@ -195,8 +196,7 @@ class _ApplicationBusinessHandler:
     def __init__(self, candidate_test=None):
         self.data = candidate_test or dh.CrudOperator(md.ApplicationModel)
 
-    def post(self, request_body, candidate_id):
-        request_body["candidate_id"] = candidate_id
+    def post(self, request_body):
         record = self.data.create(request_body)
         return record
 
@@ -205,8 +205,7 @@ class _ExperienceBusinessHandler:
     def __init__(self, candidate_test=None):
         self.data = candidate_test or dh.CrudOperator(md.ExperienceModel)
 
-    def post(self, request_body, candidate_id):
-        request_body["candidate_id"] = candidate_id
+    def post(self, request_body):
         record = self.data.create(request_body)
         return record
 
@@ -215,8 +214,7 @@ class _EducationBusinessHandler:
     def __init__(self, candidate_test=None):
         self.data = candidate_test or dh.CrudOperator(md.EducationModel)
 
-    def post(self, request_body, candidate_id):
-        request_body["candidate_id"] = candidate_id
+    def post(self, request_body):
         record = self.data.create(request_body)
         return record
 
