@@ -6,7 +6,7 @@ class _DataSerializer:
     def _data_serialize(self):
         if isinstance(self.user, list):
             return [self.serialize(user) for user in self.user]
-        return self.serialize(self.user)
+        return [self.serialize(self.user)]
 
     def _All_serialize(self):
         if isinstance(self.user, list):
@@ -22,6 +22,7 @@ class _DataSerializer:
         user = user or self.user
         return {
             "name": user.name,
+            "age": user.age,
             "email": user.email,
             "compatibility": user.compatibility,
             "sourcing": user.sourcing,

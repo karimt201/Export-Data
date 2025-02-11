@@ -1,5 +1,3 @@
-import os
-
 from flask import Flask
 import models
 import routes as route
@@ -19,10 +17,6 @@ with app.app_context():
 
 
 app.register_blueprint(route.candidate_blp)
-app.register_blueprint(route.excel_blp)
-app.register_blueprint(route.csv_blp)
-app.register_blueprint(route.pdf_blp)
-
 
 if __name__ == "__main__":
     app.run()

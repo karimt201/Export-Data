@@ -1,166 +1,130 @@
 import flask as fk
 import http
 import exceptions
+import controllers.csv as csv
+import controllers.pdf as pdf
+import controllers.excel as xlsx
 import data_handler as dh
 import models as md
 import re
 import controllers.writer as writer
-import controllers.candidate_info as ci
 
 
 # Builder interface
-class CreateExtension:
-
+class BuilderInterface:
+    
     def prepare_data(self):
         raise exceptions._NotImplementError("children must implement this method")
-
-    def create_file(self, extension):
+    
+    def create_file(self):
+        raise exceptions._NotImplementError("children must implement this method")
+    
+    def save_file(self):
         raise exceptions._NotImplementError("children must implement this method")
 
-    def save_file(self, filename):
-        raise exceptions._NotImplementError("children must implement this method")
-
-
-
-class _CreateExtensionController(CreateExtension):
+# Builder
+class _CandidateController(BuilderInterface):
     def __init__(self):
         self.candidate = None
         self.row_data = None
         self.csv_file = None
-
+        
     @property
-    def handler(self, business_handler_test=None):
+    def handler(self,business_handler_test=None):
         return business_handler_test or _CandidateBusinessHandler()
-
+    
     @property
-    def request(self, request_test=None):
+    def request(self,request_test=None):
         return request_test or fk.request.args.get
-
+    
     @property
-    def data_serializer(self, serializer_test=None):
+    def data_serializer(self,serializer_test=None):
         return serializer_test or _DataSerializer
-
+    
     @property
-    def row_excel_data(self, row_excel_data_test=None):
+    def row_excel_data(self,row_excel_data_test=None):
         return row_excel_data_test or writer.RowExcelData
-
+    
     def prepare_data(self):
         page = self.request("page", type=int)
-        per_page = self.request("per_page", 3, type=int)
+        per_page = self.request("per_page", 3 , type=int)
         candidate_id = self.request("candidateId")
-        if candidate_id:
+        if candidate_id :
             self.candidate = self.handler.get(candidate_id)
         elif page:
-            self.candidate = self.handler.get_paginated(page, per_page)
+            self.candidate = self.handler.get_paginated(page,per_page)
         else:
             self.candidate = self.handler.get_all()
-        serializer = self.data_serializer(self.candidate).data_serialize()
+        serializer = self.data_serializer(self.candidate)._data_serialize()
         self.row_data = self.row_excel_data(serializer)
-
-    def create_file(self, extension):
-        self.csv_file = extension
-
-    def data_manger(self):
-        return writer.DataManger
-
-    def save_file(self, filename):
-        manger = writer.DataManger(self.csv_file)
+    
+    def create_file(self,exten):
+        self.csv_file = exten
+    
+    @property
+    def data_manger(self,data_manger_test=None):
+        return data_manger_test or writer.DataManger
+    
+    def save_file(self,filename):
+        manger = self.data_manger(self.csv_file)
         manger.save(self.row_data, filename)
         return self.candidate
 
-
 # Main
-class _CandidateController:
-
+class _CreateAllCandidateController:
+    
     def __init__(self, candidate_test=None):
-        self.request_body = candidate_test or fk.request.get_json()
+        self._request_body = candidate_test or fk.request.get_json()
 
     @property
-    def handler(self, handler_test=None):
+    def handler(self,handler_test):
         return handler_test or _CandidateBusinessHandler()
-
+    
     @property
-    def request(self, request_test=None):
+    def request(self,request_test=None):
         return request_test or fk.request.args.get
-
+    
     @property
-    def _extension_creator(self, extension_creator_test=None):
+    def _extension_creator(self,extension_creator_test=None):
         return extension_creator_test or _ExtensionCreator
-
+    
     def create(self):
         try:
             operation = self.request("operation")
-            info = self.request("info")
-            file_name = self.request_body.get("fileName")
+            file_name = self._request_body.get("fileName")
             if operation:
-                _CreateExtensionValidator(self.request_body).All_validate()
+                _AllCandidateValidator(self._request_body)._All_validate()
                 record = self._extension_creator(operation).export(file_name)
-                return (
-                    _Serializer(record, file_name).All_serialize(),
-                    http.HTTPStatus.CREATED,
-                )
-            elif info:
-                return ci._Candidateinfo(info,self.request_body).post()
             else:
-                _AddCandidateValidator(self.request_body).All_validate()
-                record = self.handler.post(self.request_body)
-                return (
-                    _Serializer(record, file_name).All_serialize(),
-                    http.HTTPStatus.CREATED,
-                )
-
+                _AddCandidateValidator(self._request_body)._All_validate()
+                record = self.handler.post(self._request_body)
+            return _Serializer(record,file_name)._All_serialize(), http.HTTPStatus.CREATED
         except exceptions._RequiredInputError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),
-                http.HTTPStatus.NOT_FOUND,
-            )
-
+            return _ErrorSerialize()._core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
         except exceptions._InvalidInputError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(
-                    exc, http.HTTPStatus.BAD_REQUEST
-                ),
-                http.HTTPStatus.BAD_REQUEST,
-            )
-
+            return _ErrorSerialize()._core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST
         except exceptions._InvalidFieldError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(
-                    exc, http.HTTPStatus.BAD_REQUEST
-                ),
-                http.HTTPStatus.BAD_REQUEST,
-            )
+            return _ErrorSerialize()._core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST
         except exceptions._NotFoundError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),
-                http.HTTPStatus.NOT_FOUND,
-            )
+            return _ErrorSerialize()._core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
 
 # builder Director
-ExtensionCreator = {
-    "pdf": writer.PDFCreator(),
-    "csv": writer.CSVCreator(),
-    "xlsx": writer.ExcelCreator(),
-}
-
+ExtensionCreator = {"pdf": writer.PDFCreator(), "csv": writer.CSVCreator(), "xlsx": writer.ExcelCreator()}
 
 class _ExtensionCreator:
-    def __init__(self, operation):
+    def __init__(self,operation):
         self.operation = operation
-        self._create_controller = _CreateExtensionController()
-        self._extension = None
 
     @property
     def create(self):
-        return self._create_controller
-
+        return _CandidateController()
+    
     @property
     def extension(self):
-        self._extension = ExtensionCreator.get(self.operation)
-        return self._extension
-
-    def export(self, filename):
+        return ExtensionCreator.get(self.operation)
+    
+    def export(self,filename):
         self.create.prepare_data()
         if self.operation == "xlsx":
             self.create.create_file(writer.ExcelCreator())
@@ -168,46 +132,47 @@ class _ExtensionCreator:
             self.create.create_file(self.extension)
         return self.create.save_file(filename)
 
-
 # BusinessHandler
 class _CandidateBusinessHandler:
     def __init__(self, candidate_test=None):
         self.data = candidate_test or dh.CrudOperator(md.CandidateModel)
-
+        
     def post(self, request_body):
+        if request_body.get("age") < 30:
+            raise exceptions._InvalidInputError("Age must be greater than 30")
         record = self.data.create(request_body)
         return record
-
+    
     def get_all(self):
         records = self.data.get_all()
         if not records:
             raise exceptions._NotFoundError("Records does not exist")
         return records
-
+    
     def get(self, _id):
         record = self.data.get_one(_id)
         if not record:
             raise exceptions._NotFoundError("Record does not exist")
         return record
-
+    
     def get_paginated(self, page, per_page):
         pagination = self.data.get_paginated(page, per_page)
         if not pagination.items:
             raise exceptions._NotFoundError("No Records in this Page")
         return pagination.items
-
+    
 
 # Validation
-class _CreateExtensionValidator:
+class _AllCandidateValidator:
     def __init__(self, json_body=None):
         self.json_body = json_body
 
-    def All_validate(self):
+    def _All_validate(self):
         self.validate(self.json_body)
 
     def validate(self, body):
         self.is_valid_fileName(body.get("fileName"))
-
+        
     def is_valid_fileName(self, fileName):
         if not fileName:
             raise exceptions._RequiredInputError("fileName is required")
@@ -218,12 +183,11 @@ class _CreateExtensionValidator:
             raise exceptions._InvalidInputError("fileName is not valid string")
 
 
-
 class _AddCandidateValidator:
     def __init__(self, json_body=None):
         self.json_body = json_body
 
-    def All_validate(self):
+    def _All_validate(self):
         if isinstance(self.json_body, list):
             for body in self.json_body:
                 self.validate(body)
@@ -234,7 +198,9 @@ class _AddCandidateValidator:
         self.is_valid_name(body.get("name"))
         self.is_valid_age(body.get("age"))
         self.is_valid_email(body.get("email"))
-        self.is_valid_phone(body.get("phone"))
+        self.is_valid_compatibility(body.get("compatibility"))
+        self.is_valid_sourcing(body.get("sourcing"))
+        self.is_valid_status(body.get("status"))
 
     def is_valid_name(self, name):
         if not name:
@@ -244,7 +210,7 @@ class _AddCandidateValidator:
     def _is_valid_name(self, name):
         if not isinstance(name, str):
             raise exceptions._InvalidInputError("Name is not valid string")
-
+        
     def is_valid_age(self, age):
         if not age:
             raise exceptions._RequiredInputError("Age is required")
@@ -263,18 +229,35 @@ class _AddCandidateValidator:
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             raise exceptions._InvalidInputError("Email is not valid")
 
-    def is_valid_phone(self, phone):
-        if phone is not None:
-            if not phone:
-                raise exceptions._RequiredInputError("phone is required")
-            self._is_valid_phone(phone)
+    def is_valid_compatibility(self, compatibility):
+        if compatibility is not None:
+            if not compatibility:
+                raise exceptions._RequiredInputError("Compatibility is required")
+            self._is_valid_compatibility(compatibility)
         else:
-            return phone
+            return compatibility
 
-    def _is_valid_phone(self, phone):
-        if not isinstance(phone, str):
-            raise exceptions._InvalidInputError("phone must be a number")
+    def _is_valid_compatibility(self, compatibility):
+        if not isinstance(compatibility, (int)):
+            raise exceptions._InvalidInputError("Compatibility must be a number")
 
+    def is_valid_sourcing(self, sourcing):
+        if not sourcing:
+            raise exceptions._RequiredInputError("Sourcing is required")
+        self._is_valid_sourcing(sourcing)
+
+    def _is_valid_sourcing(self, sourcing):
+        if not isinstance(sourcing, str):
+            raise exceptions._InvalidInputError("Sourcing is not valid string")
+
+    def is_valid_status(self, status):
+        if not status:
+            raise exceptions._RequiredInputError("Status is required")
+        self._is_valid_status(status)
+
+    def _is_valid_status(self, status):
+        if not isinstance(status, str):
+            raise exceptions._InvalidInputError("Status is not valid string")
 
 # Serialization
 class _DataSerializer:
@@ -282,7 +265,7 @@ class _DataSerializer:
         self.user = user
         self.filename = filename
 
-    def data_serialize(self):
+    def _data_serialize(self):
         if isinstance(self.user, list):
             return [self.serialize(user) for user in self.user]
         return [self.serialize(self.user)]
@@ -293,16 +276,9 @@ class _DataSerializer:
             "name": user.name,
             "age": user.age,
             "email": user.email,
-            "phone": user.phone,
-            "skills": ", ".join(skill.name for skill in user.skills) if user.skills else None,
-            "degree": ", ".join(education.degree for education in user.education),
-            "graduation_year": ", ".join(str(education.graduation_year) for education in user.education),
-            "institution": ", ".join(education.institution for education in user.education),
-            "company": ", ".join(experience.company for experience in user.experience),
-            "position": ", ".join(experience.position for experience in user.experience),
-            "start_date": ", ".join(experience.start_date for experience in user.experience),
-            "end_date": ", ".join(experience.end_date for experience in user.experience),
-            "date": ", ".join(applications.date for applications in user.applications),
+            "compatibility": user.compatibility,
+            "sourcing": user.sourcing,
+            "status": user.status,
         }
 
 
@@ -311,35 +287,28 @@ class _Serializer:
         self.user = user
         self.filename = filename
 
-    def All_serialize(self):
+    def _All_serialize(self):
         if isinstance(self.user, list):
             return [self.all_serialize(user) for user in self.user]
         return self.all_serialize(self.user)
-
-    def all_serialize(self, user=None):
+    
+    def all_serialize(self,user=None):
         user = user or self.user
         return {
             "id": user.id,
             "name": user.name,
-            "age": user.age,
             "email": user.email,
-            "phone": user.phone,
-            "skills": ", ".join(skill.name for skill in user.skills) if user.skills else None,
-            "degree": ", ".join(education.degree for education in user.education),
-            "graduation_year": ", ".join(str(education.graduation_year) for education in user.education),
-            "institution": ", ".join(education.institution for education in user.education),
-            "company": ", ".join(experience.company for experience in user.experience),
-            "position": ", ".join(experience.position for experience in user.experience),
-            "start_date": ", ".join(experience.start_date for experience in user.experience),
-            "end_date": ", ".join(experience.end_date for experience in user.experience),
-            "date": ", ".join(applications.date for applications in user.applications), 
-            }
+            "compatibility": user.compatibility,
+            "sourcing": user.sourcing,
+            "status": user.status,
+            "filename": self.filename,
+        }
 
-# ErrorSerialize
 class _ErrorSerialize:
-    def core_error_serialize(self, error, status):
+    def _core_error_serialize(self, error, status):
         return {
             "status": status,
             "description": status.phrase,
             "message": error.message,
         }
+

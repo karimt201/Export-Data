@@ -29,3 +29,24 @@ class _NotFoundError(Exception):
     @property
     def data(self):
         return {"attributeName": self.attribute_name}
+    
+class _InvalidFieldError(Exception):
+    def __init__(self, message="Invalid field", attribute_name=None):
+        super().__init__(message)
+        self.message = message
+        self.attribute_name = attribute_name
+
+    @property
+    def data(self):
+        return {"attributeName": self.attribute_name}
+
+class _NotImplementError(Exception):
+    def __init__(self, message="Invalid field", attribute_name=None):
+        super().__init__(message)
+        self.message = message
+        self.attribute_name = attribute_name
+
+    @property
+    def data(self):
+        return {"attributeName": self.attribute_name}
+
