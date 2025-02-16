@@ -427,7 +427,189 @@ class CrudOperatorSessionDouble:
     def assert_that_crud_operator_session_add_new_record_by_phone(self,record):
         assert_that(self.record.phone).is_equal_to(record)
 
+class TestExtensionCreator(unittest.TestCase):
+    def setUp(self):
+        self.extension_creator_double = ExtensionCreatorDouble()
+        self.extension_creator = candidate._ExtensionCreator("csv",self.extension_creator_double)
+    def test_extension_creator(self):
+        self.extension_creator.export("filename.csv",self.extension_creator_double)
+        self.extension_creator_double.assert_that_extension_creator_hold_extension("csv")
+        self.extension_creator_double.assert_that_extension_creator_hold_extension("csv")
+        self.extension_creator_double.assert_that_extension_creator_hold_filename("filename.csv")
+        self.extension_creator_double.assert_that_extension_creator_hold_operation("csv")
+
+class ExtensionCreatorDouble:
+    def __init__(self):
+        self.extension = None
+        self.filename = None
+        
+    def prepare_data(self):
+        return "success"
     
+    def create_file(self,extension):
+        self.extension = extension
+        return self.extension
+    
+    def save_file(self,filename):
+        self.filename = filename
+        return self.filename
+    
+    def get(self,operation):
+        self.operation = operation
+        return self.operation
+    
+    def assert_that_extension_creator_hold_extension(self,extension):
+        assert_that(self.extension).is_equal_to(extension)
+
+    def assert_that_extension_creator_hold_filename(self,filename):
+        assert_that(self.filename).is_equal_to(filename)
+        
+    def assert_that_extension_creator_hold_operation(self,operation):
+        assert_that(self.operation).is_equal_to(operation)
+    
+
+class TestCandidateBusinessHandler(unittest.TestCase):
+    def setUp(self):
+        self.candidate_business_handler_double = CandidateBusinessHandlerDouble()
+        self.candidate_business_handler = candidate._CandidateBusinessHandler(self.candidate_business_handler_double)
+    
+    def test_candidate_business_handler(self):
+        self.candidate_business_handler.post({"name":"karim"})
+        self.candidate_business_handler.get_all()
+        self.candidate_business_handler.get(1)
+        self.candidate_business_handler.get_paginated(1,3)
+        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_request_body({"name":"karim"})
+        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_candidate_id(1)
+        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_page(1)
+        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_per_page(3)
+
+class CandidateBusinessHandlerDouble:
+    def __init__(self):
+        self.request_body = None
+        self.id = None
+        self.page = None
+        self.per_page = None
+        
+    def create(self,request_body):
+        self.request_body = request_body
+        return "success"
+    
+    def get_all(self):
+        return "success"
+    
+    def get_one(self,id):
+        self.id = id
+        return "success"
+    
+    def get_paginated(self,page,per_page):
+        self.page = page
+        self.per_page = per_page
+        return {"page":self.page , "per_page":self.per_page}
+    
+    def assert_that_candidate_business_handler_hold_request_body(self,request_body):
+        assert_that(self.request_body).is_equal_to(request_body)
+        
+    def assert_that_candidate_business_handler_hold_candidate_id(self,id):
+        assert_that(self.id).is_equal_to(id)
+
+    def assert_that_candidate_business_handler_hold_page(self,page):
+        assert_that(self.page).is_equal_to(page)
+        
+    def assert_that_candidate_business_handler_hold_per_page(self,per_page):
+        assert_that(self.per_page).is_equal_to(per_page)
+
+class TestCreateExtensionValidator(unittest.TestCase):
+    def setUp(self):
+        self.create_extension_validator = candidate._CreateExtensionValidator()
+        
+    def test_add_skills_validator(self):
+        data = {
+            "filename":"learn.csv",
+        }
+        self.create_extension_validator.validate(data)
+        with self.assertRaises(exceptions._RequiredInputError) as create_extension_filename_validator_exc:
+            self.create_extension_validator.validate({})
+        assert_that(str(create_extension_filename_validator_exc.exception)).is_equal_to(
+            "filename is required"
+        )
+        with self.assertRaises(exceptions._InvalidInputError) as create_extension_filename_validator_exc:
+            self.create_extension_validator.validate({"filename":1})
+        assert_that(str(create_extension_filename_validator_exc.exception)).is_equal_to(
+            "filename is not valid string"
+        )
+        
+class TestAddCandidateValidator(unittest.TestCase):
+    def setUp(self):
+        self.add_candidate_validator = candidate._AddCandidateValidator()
+        
+    def test_add_candidate_validator(self):
+        data = {
+            "name":"karim",
+            "age":26,
+            "email":"karim@gmail.com",
+            "phone":"01016767542",
+        }
+        self.add_candidate_validator.validate(data)
+        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_name_validator_exc:
+            self.add_candidate_validator.validate({})
+        assert_that(str(add_candidate_name_validator_exc.exception)).is_equal_to(
+            "name is required"
+        )
+        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_name_validator_exc:
+            self.add_candidate_validator.validate({"name":1})
+        assert_that(str(add_candidate_name_validator_exc.exception)).is_equal_to(
+            "name is not valid string"
+        )
+        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_age_validator_exc:
+            self.add_candidate_validator.validate({"name":"karim"})
+        assert_that(str(add_candidate_age_validator_exc.exception)).is_equal_to(
+            "age is required"
+        )
+        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_name_validator_exc:
+            self.add_candidate_validator.validate({"name":"karim","age":"1"})
+        assert_that(str(add_candidate_name_validator_exc.exception)).is_equal_to(
+            "age is not valid int"
+        )
+        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_email_validator_exc:
+            self.add_candidate_validator.validate({"name":"karim","age":26})
+        assert_that(str(add_candidate_email_validator_exc.exception)).is_equal_to(
+            "Email is required"
+        )
+        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_email_validator_exc:
+            self.add_candidate_validator.validate({"name":"karim","age":26,"email":"karim"})
+        assert_that(str(add_candidate_email_validator_exc.exception)).is_equal_to(
+            "Email is not valid"
+        )
+        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_phone_validator_exc:
+            self.add_candidate_validator.validate({"name":"karim","age":26,"email":"karim@gmail.com"})
+        assert_that(str(add_candidate_phone_validator_exc.exception)).is_equal_to(
+            "phone is required"
+        )
+        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_phone_validator_exc:
+            self.add_candidate_validator.validate({"name":"karim","age":26,"email":"karim@gmail.com","phone":1})
+        assert_that(str(add_candidate_phone_validator_exc.exception)).is_equal_to(
+            "phone must be a number"
+        )
+
+class TestErrorSerialize(unittest.TestCase):
+    def setUp(self):
+        self.error_serialize = candidate._ErrorSerialize()
+        
+    def test_error_serialize(self):
+        self.error_serialize_status_double = ErrorSerializeStatusDouble()
+        self.error_serialize_error_double = ErrorSerializeErrorDouble()
+        self.error_serialize.core_error_serialize(self.error_serialize_error_double,self.error_serialize_status_double)
+    
+class ErrorSerializeStatusDouble:
+    def __init__(self):
+        self.status = self
+        self.phrase = "phrase"
+        
+class ErrorSerializeErrorDouble:
+    def __init__(self):
+        self.error = self
+        self.message = "message"
+        
 
 if __name__ == "__main__":
     unittest.main()

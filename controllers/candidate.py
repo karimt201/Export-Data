@@ -87,10 +87,11 @@ class _CandidateController:
     def request(self, request_test=None):
         return request_test or fk.request.args
 
-    
+    @property
     def extension_creator(self, extension_creator_test=None):
         return extension_creator_test or _ExtensionCreator
     
+    @property
     def candidate_info(self, candidate_info_test=None,request_body=None):
         return candidate_info_test or ci._Candidateinfo
 
@@ -104,7 +105,7 @@ class _CandidateController:
                 record = self.extension_creator(operation).export(file_name)
                 return _Serializer(record, file_name).All_serialize(),http.HTTPStatus.CREATED,
             elif info:
-                return ci._Candidateinfo(info,self.request_body).post()
+                return self.candidate_info(info,self.request_body).post()
             else:
                 _AddCandidateValidator(self.request_body).All_validate()
                 record = self.handler(add_test).post(self.request_body)
@@ -137,17 +138,19 @@ class _ExtensionCreator:
     def create(self):
         return self._create_controller
 
-    @property
-    def extension(self):
-        self._extension = ExtensionCreator.get(self.operation)
+    def extension_creator(self,extension_creator_test=None):
+        return extension_creator_test or ExtensionCreator
+    
+    def extension(self,operation_test=None):
+        self._extension = self.extension_creator(operation_test).get(self.operation)
         return self._extension
 
-    def export(self, filename):
+    def export(self, filename,operation_test=None):
         self.create.prepare_data()
         if self.operation == "xlsx":
             self.create.create_file(writer.ExcelCreator())
         else:
-            self.create.create_file(self.extension)
+            self.create.create_file(self.extension(operation_test))
         return self.create.save_file(filename)
 
 
@@ -188,16 +191,16 @@ class _CreateExtensionValidator:
         self.validate(self.json_body)
 
     def validate(self, body):
-        self.is_valid_fileName(body.get("fileName"))
+        self.is_valid_fileName(body.get("filename"))
 
     def is_valid_fileName(self, fileName):
         if not fileName:
-            raise exceptions._RequiredInputError("fileName is required")
+            raise exceptions._RequiredInputError("filename is required")
         self._is_valid_fileName(fileName)
 
     def _is_valid_fileName(self, fileName):
         if not isinstance(fileName, str):
-            raise exceptions._InvalidInputError("fileName is not valid string")
+            raise exceptions._InvalidInputError("filename is not valid string")
 
 class _AddCandidateValidator:
     def __init__(self, json_body=None):
@@ -218,21 +221,21 @@ class _AddCandidateValidator:
 
     def is_valid_name(self, name):
         if not name:
-            raise exceptions._RequiredInputError("Name is required")
+            raise exceptions._RequiredInputError("name is required")
         self._is_valid_name(name)
 
     def _is_valid_name(self, name):
         if not isinstance(name, str):
-            raise exceptions._InvalidInputError("Name is not valid string")
+            raise exceptions._InvalidInputError("name is not valid string")
 
     def is_valid_age(self, age):
         if not age:
-            raise exceptions._RequiredInputError("Age is required")
+            raise exceptions._RequiredInputError("age is required")
         self._is_valid_age(age)
 
     def _is_valid_age(self, age):
         if not isinstance(age, int):
-            raise exceptions._InvalidInputError("Age is not valid int")
+            raise exceptions._InvalidInputError("age is not valid int")
 
     def is_valid_email(self, email):
         if not email:
@@ -244,13 +247,10 @@ class _AddCandidateValidator:
             raise exceptions._InvalidInputError("Email is not valid")
 
     def is_valid_phone(self, phone):
-        if phone is not None:
-            if not phone:
-                raise exceptions._RequiredInputError("phone is required")
-            self._is_valid_phone(phone)
-        else:
-            return phone
-
+        if not phone:
+            raise exceptions._RequiredInputError("phone is required")
+        self._is_valid_phone(phone)
+        
     def _is_valid_phone(self, phone):
         if not isinstance(phone, str):
             raise exceptions._InvalidInputError("phone must be a number")
