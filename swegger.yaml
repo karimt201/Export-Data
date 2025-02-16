@@ -3,221 +3,47 @@ info:
   title: Talantino
   version: 1.0.11
 servers:
-  - url: http://localhost:5000/
+  - url: http://localhost:5000
 tags:
-  - name: Excel
-    description: Generate candidate data in Excel formats.
-  - name: Csv
-    description: Generate candidate data in CSV formats.
-  - name: Pdf
-    description: Generate candidate data in PDF formats.
+  - name: Candidates
+    description: Generate candidate data in Excel,csv,pdf formats.
 
 paths:
-  /excel:
-    get:
+  /candidates:
+    post:
       tags:
-        - Excel
-      summary: Export Excel File
-      description: Generate candidate data in Excel format.
-      operationId: exportexcel
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-        '400':
-          description: Invalid input
-        '422':
-          description: Validation exception
-  /excel/:
-    get:
-      tags:
-        - Excel
-      summary: Export Excel File Pageinated
-      description: Generate candidate data in Excel format with pagination.
-      operationId: exportexcelWithPage
+        - Candidates
+      summary: Create a new candidate
+      description: Create a new candidate with the provided information.
+      operationId: all_candidate_export
       parameters:
-        - name: page
+        - name: info
           in: query
-          required: false
-          description: The page number for pagination.
+          required: False
+          description: Information about the candidate (from query).
           schema:
-            type: integer
-            default: 1
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-        '400':
-          description: Invalid input
-        '422':
-          description: Validation exception
-  /excel/{id}:
-    get:
-      tags:
-        - Excel
-      summary: Export one candidate in excel file
-      description: Generate Excel data for a specific ID
-      operationId: postExcelById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Id of the candidate
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: CSV generated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-        '404':
-          description: Candidate not found
-        '400':
-          description: Invalid ID
-  /csv:
-    get:
-      tags:
-        - Csv
-      summary: Export CSV File
-      description: Generate candidate data in CSV format.
-      operationId: exportcsv
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-        '400':
-          description: Invalid input
-        '422':
-          description: Validation exception
-  /csv/:
-    get:
-      tags:
-        - Csv
-      summary: Export CSV File Pageinated
-      description: Generate candidate data in CSV format with pagination.
-      operationId: exportcsvWithPage
-      parameters:
-        - name: page
+            type: string
+        - name: operation
           in: query
-          required: false
-          description: The page number for pagination.
+          required: False
+          description: The operation to be performed (from query).
           schema:
-            type: integer
-            default: 1
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+
       responses:
-        '200':
-          description: Successful operation
+        "200":
+          description: Candidate created successfully
           content:
             application/json:
               schema:
                 type: object
-        '400':
+        "400":
           description: Invalid input
-        '422':
+        "422":
           description: Validation exception
-  /csv/{id}:
-    get:
-      tags:
-        - Csv
-      summary: Export one candidate in csv file
-      description: Generate CSV data for a specific ID
-      operationId: postCsvById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Id of the candidate
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: CSV generated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-        '404':
-          description: Candidate not found
-        '400':
-          description: Invalid ID
-  /pdf:
-    get:
-      tags:
-        - Pdf
-      summary: Export PDF File
-      description: Generate candidate data in PDF format.
-      operationId: exportpdf
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-        '400':
-          description: Invalid input
-        '422':
-          description: Validation exception
-  /pdf/:
-    get:
-      tags:
-        - Pdf
-      summary: Export Pdf File Pageinated
-      description: Generate candidate data in PDF format with pagination.
-      operationId: exportpdfWithPage
-      parameters:
-        - name: page
-          in: query
-          required: false
-          description: The page number for pagination.
-          schema:
-            type: integer
-            default: 1
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-        '400':
-          description: Invalid input
-        '422':
-          description: Validation exception
-  /pdf/{id}:
-    get:
-      tags:
-        - Pdf
-      summary: Export one candidate in pdf file
-      description: Generate PDF data for a specific ID
-      operationId: postPdfById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Id of the candidate
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: CSV generated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-        '404':
-          description: Candidate not found
-        '400':
-          description: Invalid ID
-      

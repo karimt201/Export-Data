@@ -1,233 +1,433 @@
-# import unittest
-# from assertpy import assert_that
-# import reportlab.lib.pagesizes as pagesizes
-# import openpyxl as xl
-# import reportlab.lib as lib
-# import controllers.writer as writer
-# import controllers.candidate as candidate
-# # import controllers.writer as excel
-# # import Serializer as sr
-# # import validator as vd
-# import exceptions as ex
-# import data_handler as dh
-# import data_handler as dh
-# import app as app
-# import exceptions
+import unittest
+from assertpy import assert_that
+import sys
+import os
+# import controllers.candidate_info as candidate_info
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
+import controllers.candidate as candidate
+import data_handler as dh
+import exceptions
 
 
+class TestCreateExtension(unittest.TestCase):
+    def test_create_extension(self):
+        create_extension = candidate.CreateExtension()
+        with self.assertRaises(exceptions._NotImplementError) as prepare_data_exc:
+            create_extension.prepare_data()
+        assert_that(str(prepare_data_exc.exception)).is_equal_to(
+            "children must implement this method"
+        )
+        with self.assertRaises(exceptions._NotImplementError) as create_file_exc:
+            create_extension.create_file("extension")
+        assert_that(str(create_file_exc.exception)).is_equal_to(
+            "children must implement this method"
+        )
+        with self.assertRaises(exceptions._NotImplementError) as save_file_exc:
+            create_extension.save_file("filename")
+        assert_that(str(save_file_exc.exception)).is_equal_to(
+            "children must implement this method"
+        )
 
-# class TestCrudOperator(unittest.TestCase):
-
-#     def test_crud_operator(self):
-#         model_double = ModelDouble()
-#         session_double = SessionDouble()
-#         crud_operator = dh.CrudOperator(model_double, session_double)
-#         crud_operator_obj = dh.CrudOperator(ModelDouble, session_double)
-#         data = [{"name": "karim"}, {"name": "omar"}]
-#         assert_that(crud_operator.get_all()).is_equal_to("all success")
-#         assert_that(crud_operator.get_one(1)).is_equal_to("one success")
-#         assert_that(crud_operator_obj.post_list(data)).is_equal_to(
-#             [{"name": "karim"}, {"name": "omar"}]
-#         )
-#         assert_that(crud_operator_obj.post_list(data[0])).is_equal_to({"name": "karim"})
-
-
-# class ModelDouble:
-
-#     def __init__(self, data=None):
-#         self.data = data
-
-#     @property
-#     def query(self):
-#         return self
-
-#     def all(self):
-#         return "all success"
-
-#     def get(self, id):
-#         return "one success"
-
-
-# class SessionDouble:
-
-#     def get(self, model, id):
-#         return "one success"
-
-#     def add(self, new_candidate):
-#         pass
-
-#     def commit(self):
-#         pass
-
-
-# class TestDatabaseHandler(unittest.TestCase):
-#     def test_data_handler(self):
-
-#         data_handler_double = DatabaseHandlerDouble()
-#         with self.assertRaises(ex._NotFoundError) as get_all_exc:
-#             dh.database_handle(data_handler_double).get_all()
-#         assert_that(str(get_all_exc.exception)).is_equal_to("Records does not exist")
-#         with self.assertRaises(ex._NotFoundError) as paginated_exc:
-#             dh.database_handle(data_handler_double).get_paginated_for_test()
-#         assert_that(str(paginated_exc.exception)).is_equal_to("No Records in this Page")
-#         with self.assertRaises(ex._NotFoundError) as get_exc:
-#             dh.database_handle(data_handler_double).get(100)
-#         assert_that(str(get_exc.exception)).is_equal_to("Record does not exist")
-#         with self.assertRaises(ex._InvalidInputError) as post_all_data_types_exc:
-#             dh.database_handle(data_handler_double).post_all_data_types(())
-#         assert_that(str(post_all_data_types_exc.exception)).is_equal_to(
-#             "invalid input, only accept dict data or list of dicts"
-#         )
-
-
-# class DatabaseHandlerDouble:
-#     def get_all(self):
-#         pass
-
-#     def get_paginated(self, page, per_page):
-#         return self
-
-#     @property
-#     def items(self):
-#         pass
-
-#     def get_one(self, id):
-#         pass
-
-#     def post_list(self, request_body):
-#         pass
-
-#     def post_one(self, request_body):
-#         pass
-
-
-# class TestValidator(unittest.TestCase):
-#     def test_validator(self):
-#         required_input_error_double = RequiredInputError({"name": "ahmed"})
-#         invalid_input_error_double = InvalidInputError({"name": 4})
-#         with self.assertRaises(ex._RequiredInputError) as exc:
-#             vd._DataValidator(required_input_error_double)._All_validate()
-#         with self.assertRaises(ex._InvalidInputError) as ec:
-#             vd._DataValidator(invalid_input_error_double)._All_validate()
-#         assert_that(str(exc.exception)).is_equal_to("Name is required")
-#         assert_that(str(ec.exception)).is_equal_to("Name is not valid string")
-
-
-# class RequiredInputError:
-#     def __init__(self, user_request):
-#         self.user_request = user_request
-
-#     def get(self, item):
-#         pass
-
-
-# class InvalidInputError:
-#     def __init__(self, user_request):
-#         self.user_request = user_request
-
-#     def get(self, item):
-#         return self.user_request[item]
-
-
-# class TestSerializer(unittest.TestCase):
-
-#     def test_serializer(self):
-#         user = {
-#             "id": 1,
-#             "name": "ahmed",
-#             "email": "ahmed@gmail.com",
-#             "compatibility": 22,
-#             "sourcing": "internal-hiring",
-#             "status": "Rejected",
-#         }
-
-#         serializer_double = SerializerDouble(user)
-#         serializer_test = sr._DataSerializer(
-#             serializer_double, "success"
-#         )._All_serialize()
-#         assert_that(serializer_test["id"]).is_equal_to(1)
-#         assert_that(serializer_test["name"]).is_equal_to("ahmed")
-#         assert_that(serializer_test["email"]).is_equal_to("ahmed@gmail.com")
-#         assert_that(serializer_test["compatibility"]).is_equal_to(22)
-#         assert_that(serializer_test["sourcing"]).is_equal_to("internal-hiring")
-#         assert_that(serializer_test["status"]).is_equal_to("Rejected")
-#         assert_that(serializer_test["filename"]).is_equal_to("success")
-#         serializer_double.assert_that_id_called_with(1)
-#         serializer_double.assert_that_name_called_with("ahmed")
-#         serializer_double.assert_that_email_called_with("ahmed@gmail.com")
-#         serializer_double.assert_that_compatibility_called_with(22)
-#         serializer_double.assert_that_sourcing_called_with("internal-hiring")
-#         serializer_double.assert_that_status_called_with("Rejected")
-
-
-# class SerializerDouble:
-#     def __init__(self, user):
-#         self.given_user = user
-#         self.id = self.given_user["id"]
-#         self.name = self.given_user["name"]
-#         self.email = self.given_user["email"]
-#         self.compatibility = self.given_user["compatibility"]
-#         self.sourcing = self.given_user["sourcing"]
-#         self.status = self.given_user["status"]
-
-#     def name(self, name):
-#         self.given_user["name"] = name
-
-#     def email(self, email):
-#         self.given_user["email"] = email
-
-#     def compatibility(self, compatibility):
-#         self.given_user["compatibility"] = compatibility
-
-#     def sourcing(self, sourcing):
-#         self.given_user["sourcing"] = sourcing
-
-#     def status(self, status):
-#         self.given_user["status"] = status
-
-#     def assert_that_id_called_with(self, id):
-#         assert_that(self.given_user["id"]).is_equal_to(id)
-
-#     def assert_that_name_called_with(self, name):
-#         assert_that(self.given_user["name"]).is_equal_to(name)
-
-#     def assert_that_email_called_with(self, email):
-#         assert_that(self.given_user["email"]).is_equal_to(email)
-
-#     def assert_that_compatibility_called_with(self, compatibility):
-#         assert_that(self.given_user["compatibility"]).is_equal_to(compatibility)
-
-#     def assert_that_sourcing_called_with(self, sourcing):
-#         assert_that(self.given_user["sourcing"]).is_equal_to(sourcing)
-
-#     def assert_that_status_called_with(self, status):
-#         assert_that(self.given_user["status"]).is_equal_to(status)
-
-
-
-# class TestCreateExtension(unittest.TestCase):
-#     def __init__(self):
-#         self.error_create_extension = candidate.CreateExtension()
+class TestCreateExtensionController(unittest.TestCase):
+    def setUp(self):
+        self.create_extension_page_double = CreateExtensionPageDouble()
+        self.create_extension_per_page_double = CreateExtensionPerPageDouble()
+        self.create_extension_candidate_id_double = CreateExtensionCandidateIdDouble()
+        self.create_extension_handler_double = CreateExtensionHandlerDouble()
+        self.create_extension_controller = candidate._CreateExtensionController()
         
-#     def test_prepare_data_raise_exception(self):
-#         with self.assertRaises(exceptions._NotImplementError) as prepare_data_exc:
-#             self.error_create_extension.prepare_data()
-#         assert_that(str(prepare_data_exc.exception)).is_equal_to(
-#             "children must implement this method"
-#         )
-#     def test_create_file_raise_exception(self):
-#         with self.assertRaises(exceptions._NotImplementError) as create_file_exc:
-#             self.error_create_extension.create_file("extension")
-#         assert_that(str(create_file_exc.exception)).is_equal_to(
-#             "children must implement this method"
-#         )
-#     def test_save_file_raise_exception(self):
-#         with self.assertRaises(exceptions._NotImplementError) as save_file_exc:
-#             self.error_create_extension.save_file("filename")
-#         assert_that(str(save_file_exc.exception)).is_equal_to(
-#             "children must implement this method"
-#         )
+    def test_create_extension(self):
+        self.create_extension_controller.prepare_data(
+            self.create_extension_page_double,
+            self.create_extension_per_page_double,
+            self.create_extension_candidate_id_double,
+            self.create_extension_handler_double
+            )
+        self.create_extension_controller.create_file(self.create_extension_page_double)
+        self.create_extension_controller.save_file("filename",self.create_extension_page_double)
+        self.create_extension_page_double.assert_that_create_extension_hold_the_page("page")
+        self.create_extension_page_double.assert_that_create_extension_hold_the_type(int)
+        self.create_extension_page_double.assert_that_create_extension_hold_the_serializer_name("karim")
+        self.create_extension_page_double.assert_that_create_extension_hold_the_serializer_date("2024-2-10")
+        self.create_extension_page_double.assert_that_create_extension_hold_the_row_data_position("fullstack")
+        self.create_extension_page_double.assert_that_create_extension_hold_the_filename("filename")
+        self.create_extension_per_page_double.assert_that_create_extension_hold_the_per_page("per_page")
+        self.create_extension_per_page_double.assert_that_create_extension_hold_the_num_of_item_in_page(3)
+        self.create_extension_per_page_double.assert_that_create_extension_hold_the_type(int)
+        self.create_extension_candidate_id_double.assert_that_create_extension_hold_candidate_id("candidate_id")
+        self.create_extension_handler_double.assert_that_create_extension_hold_candidate_id("candidate_id")
+        
+    
+    def test_create_extension_candidate_id_equal_none(self):
+        create_extension_candidate_id_none_double = CreateExtensionCandidateIdNoneDouble()
+
+        self.create_extension_controller.prepare_data(
+            self.create_extension_page_double,
+            self.create_extension_per_page_double,
+            create_extension_candidate_id_none_double,
+            self.create_extension_handler_double
+            )
+        self.create_extension_controller.create_file(self.create_extension_page_double)
+        self.create_extension_controller.save_file("filename",self.create_extension_page_double)
+        self.create_extension_handler_double.assert_that_create_extension_hold_the_page("page")
+        self.create_extension_handler_double.assert_that_create_extension_hold_the_per_page("per_page")
+        create_extension_candidate_id_none_double.assert_that_create_extension_hold_candidate_id("candidate_id")
+    
+    def test_create_extension_page_equal_none(self):
+        create_extension_page_none_double = CreateExtensionPageNoneDouble()
+
+        self.create_extension_controller.prepare_data(
+            create_extension_page_none_double,
+            self.create_extension_per_page_double,
+            self.create_extension_candidate_id_double,
+            self.create_extension_handler_double
+            )
+        self.create_extension_controller.create_file(self.create_extension_page_double)
+        self.create_extension_controller.save_file("filename",self.create_extension_page_double)
+        create_extension_page_none_double.assert_that_create_extension_hold_the_page("page")
+        create_extension_page_none_double.assert_that_create_extension_hold_the_type(int)
+        create_extension_page_none_double.assert_that_create_extension_hold_the_serializer_date("2024-2-10")
+        create_extension_page_none_double.assert_that_create_extension_hold_the_serializer_name("karim")
+    
+
+class CreateExtensionPageDouble:
+    def __init__(self):
+        self.page = None
+        self.type = None
+        self.serializer = None
+        self.extension_file = None
+        self.row_data = None
+        self.filename = None
+        
+    def get(self,page,type):
+        self.page = page
+        self.type = type
+        return self.page
+    
+    def RowExcelData(self,serializer):
+        self.serializer = serializer
+        return self.serializer
+    
+    def DataManger(self,extension_file):
+        self.extension_file = extension_file
+        return self
+    
+    def save(self,row_data,filename):
+        self.row_data = row_data
+        self.filename = filename
+        return "success"
+    
+    def assert_that_create_extension_hold_the_page(self,page):
+        assert_that(self.page).is_equal_to(page)
+    
+    def assert_that_create_extension_hold_the_type(self,type):
+        assert_that(self.type).is_equal_to(type)
+    
+    def assert_that_create_extension_hold_the_serializer_name(self,serializer_name):
+        assert_that(self.serializer[0].get('name')).is_equal_to(serializer_name)
+        
+    def assert_that_create_extension_hold_the_serializer_date(self,serializer_date):
+        assert_that(self.serializer[0].get('date')).is_equal_to(serializer_date)
+    
+    def assert_that_create_extension_hold_the_row_data_position(self,row_data):
+        assert_that(self.row_data[0].get('position')).is_equal_to(row_data)
+    
+    def assert_that_create_extension_hold_the_filename(self,filename):
+        assert_that(self.filename).is_equal_to(filename)
+    
+    
+class CreateExtensionPageNoneDouble:
+    def __init__(self):
+        self.page = None
+        self.type = None
+        self.serializer = None
+        self.extension_file = None
+        self.row_data = None
+        self.filename = None
+        
+    def get(self,page,type):
+        self.page = page
+        self.type = type
+        return None
+    
+    def RowExcelData(self,serializer):
+        self.serializer = serializer
+        return self.serializer
+    
+    def DataManger(self,extension_file):
+        self.extension_file = extension_file
+        return self
+    
+    def save(self,row_data,filename):
+        self.row_data = row_data
+        self.filename = filename
+        return self.filename
+    
+    def assert_that_create_extension_hold_the_page(self,page):
+        assert_that(self.page).is_equal_to(page)
+    
+    def assert_that_create_extension_hold_the_type(self,type):
+        assert_that(self.type).is_equal_to(type)
+    
+    def assert_that_create_extension_hold_the_serializer_name(self,serializer_name):
+        assert_that(self.serializer[0].get('name')).is_equal_to(serializer_name)
+        
+    def assert_that_create_extension_hold_the_serializer_date(self,serializer_date):
+        assert_that(self.serializer[0].get('date')).is_equal_to(serializer_date)
+    
+class CreateExtensionPerPageDouble:
+    def __init__(self):
+        self.per_page = None
+        self.num_of_item_in_page = None
+        self.type = None
+    
+    def get(self,per_page,num_of_item_in_page,type):
+        self.per_page = per_page
+        self.num_of_item_in_page = num_of_item_in_page
+        self.type = type
+        return self.per_page
+    
+    def assert_that_create_extension_hold_the_per_page(self,per_page):
+        assert_that(self.per_page).is_equal_to(per_page)
+        
+    def assert_that_create_extension_hold_the_num_of_item_in_page(self,num_of_item_in_page):
+        assert_that(self.num_of_item_in_page).is_equal_to(num_of_item_in_page)
+    
+    def assert_that_create_extension_hold_the_type(self,type):
+        assert_that(self.type).is_equal_to(type)
+    
+class CreateExtensionCandidateIdDouble:
+    def __init__(self):
+        self.candidate_id = None
+
+    def get(self,candidate_id):
+        self.candidate_id = candidate_id
+        return self.candidate_id
+    
+    def assert_that_create_extension_hold_candidate_id(self,candidate_id):
+        assert_that(self.candidate_id).is_equal_to(candidate_id)
+    
+class CreateExtensionCandidateIdNoneDouble:
+    def __init__(self):
+        self.candidate_id = None
+    
+    def get(self,candidate_id):
+        self.candidate_id = candidate_id
+        return None
+    
+    def assert_that_create_extension_hold_candidate_id(self,candidate_id):
+        assert_that(self.candidate_id).is_equal_to(candidate_id)
+    
+class CreateExtensionHandlerDouble:
+    def __init__(self):
+        self.candidate_id = None
+        self.page = None
+        self.per_page = None
+        self.name = "karim"
+        self.age = 25
+        self.email = "karim@gmail.com"
+        self.phone = "01016767542"
+        self.skills = [self]
+        self.education = [self]
+        self.experience = [self]
+        self.applications = [self]
+        self.degree = "high school"
+        self.graduation_year = 2025
+        self.institution = "cairo unverisity"
+        self.company = "arete"
+        self.position = "fullstack"
+        self.start_date = "2025-2-1"
+        self.end_date = "2025-2-10"
+        self.date = "2024-2-10"
+        
+    def get(self,candidate_id):
+        self.candidate_id = candidate_id
+        return self
+    
+    def get_paginated(self,page, per_page):
+        self.page = page
+        self.per_page = per_page
+        return self
+    
+    def get_all(self):
+        return self
+    
+    def assert_that_create_extension_hold_candidate_id(self,candidate_id):
+        assert_that(self.candidate_id).is_equal_to(candidate_id)
+        
+    def assert_that_create_extension_hold_the_page(self,page):
+        assert_that(self.page).is_equal_to(page)
+        
+    def assert_that_create_extension_hold_the_per_page(self,per_page):
+        assert_that(self.per_page).is_equal_to(per_page)
 
 
-# if __name__ == "__main__":
-#     unittest.main()
+class TestCandidateController(unittest.TestCase):
+    def setUp(self):
+        self.candidate_request_body_double = CandidateRequestBodyDouble()
+        self.candidate_operation_double = CandidateOperationDouble()
+        self.candidate_info_double = CandidateInfoDouble()
+        self.add_candidate_double = AddCandidateDouble()
+        self.candidate_controller = candidate._CandidateController(self.candidate_request_body_double)
+        
+    def test_candidate_controller(self):
+        self.candidate_controller.create(
+            self.candidate_operation_double,
+            self.candidate_info_double,
+            self.add_candidate_double
+            )
+        
+class CandidateOperationDouble:
+    def __init__(self):
+        self.id = 1
+        self.name = "karim"
+        self.age = 25
+        self.email = "karim@gmail.com"
+        self.phone = "01016767542"
+        self.skills = [self]
+        self.education = [self]
+        self.experience = [self]
+        self.applications = [self]
+        self.degree = "high school"
+        self.graduation_year = 2025
+        self.institution = "cairo unverisity"
+        self.company = "arete"
+        self.position = "fullstack"
+        self.start_date = "2025-2-1"
+        self.end_date = "2025-2-10"
+        self.date = "2024-2-10"
+        
+    def get(self,operation):
+        return None
+    
+    def export(self,file_name):
+        return self
+    
+class CandidateInfoDouble:
+    def get(self,info):
+        return None
+    
+    def post(self):
+        return 1
+
+class CandidateRequestBodyDouble:
+    def get(self,fileName):
+        self.fileName=fileName
+        return self.fileName
+
+class AddCandidateDouble:
+    def post(self,request_body):
+        self.request_body=request_body
+        return self.request_body
+
+class TestCrudOperator(unittest.TestCase):
+    def setUp(self):
+        self.crud_operator_model_post_double = CrudOperatorPostModelDouble
+        self.crud_operator_model_double = CrudOperatorModelDouble()
+    
+    def test_get_operator(self):
+        crud_operator_session_double = CrudOperatorSessionDouble()
+
+        crud_operator = dh.CrudOperator(self.crud_operator_model_double,crud_operator_session_double)
+        crud_operator.get_all()
+        crud_operator.get_one(1)
+        crud_operator.get_paginated(1,3)
+        crud_operator_session_double.assert_that_crud_operator_session_get_by_id(1)
+
+        with self.assertRaises(exceptions._InvalidFieldError) as crud_operator_exc:
+            crud_operator.create({"name":"karim"})
+        assert_that(str(crud_operator_exc.exception)).is_equal_to(
+            f"name field is not valid"
+        )
+        crud_operator.commit()
+        crud_operator.filter_data("karim")
+        self.crud_operator_model_double.assert_that_crud_operator_model_get_by_page_number(1)
+        self.crud_operator_model_double.assert_that_crud_operator_model_get_per_page(3)
+        self.crud_operator_model_double.assert_that_crud_operator_model_paginate_error_out(False)
+        self.crud_operator_model_double.assert_that_crud_operator_model_filter_by_name("name")
+        
+    def test_get_operator(self):
+        crud_operator_session_double = CrudOperatorSessionDouble()
+
+        crud_operator = dh.CrudOperator(self.crud_operator_model_post_double,crud_operator_session_double)
+        crud_operator.create({"id":1,"phone":"01016767542"})
+        crud_operator.create_many({"id":1,"phone":"01016767542"})
+
+        crud_operator_session_double.assert_that_crud_operator_session_add_new_record_by_phone("01016767542")
+        
+        
+class CrudOperatorPostModelDouble:
+    id = 1
+    phone = "01016767542"
+    
+    def __init__(self,**filtered_data):
+        self.filtered_data = filtered_data
+
+class CrudOperatorModelDouble:
+    
+    def __init__(self):
+        self.query = self
+        self.page = None
+        self.per_page = None
+        self.error_out = None
+        self.name = None
+        
+    def all(self):
+        return "success"
+    
+    def paginate(self,page,per_page,error_out):
+        self.page = page
+        self.per_page = per_page
+        self.error_out = error_out
+        return self.page
+    
+    def filter_by(self,name):
+        self.name = name
+        return self
+    
+    def first(self):
+        return "success"
+
+    def assert_that_crud_operator_model_get_by_page_number(self,page):
+        assert_that(self.page).is_equal_to(page)
+        
+    def assert_that_crud_operator_model_get_per_page(self,per_page):
+        assert_that(self.per_page).is_equal_to(per_page)
+        
+    def assert_that_crud_operator_model_paginate_error_out(self,error_out):
+        assert_that(self.error_out).is_equal_to(error_out)
+        
+    def assert_that_crud_operator_model_filter_by_name(self,name):
+        assert_that(self.name).is_equal_to(name)
+        
+        
+class CrudOperatorSessionDouble:
+    def __init__(self):
+        self.model = None
+        self.id = None
+        self.record = None
+        
+    def get(self,model,id):
+        self.model = model
+        self.id = id
+        return self.id
+    
+    def commit(self):
+        pass
+    
+    def add(self,record):
+        self.record = record
+        return self.record
+    
+    def assert_that_crud_operator_session_get_by_id(self,id):
+        assert_that(self.id).is_equal_to(id)
+        
+    def assert_that_crud_operator_session_add_new_record_by_phone(self,record):
+        assert_that(self.record.phone).is_equal_to(record)
+
+    
+
+if __name__ == "__main__":
+    unittest.main()

@@ -3,9 +3,9 @@ import models as md
 
 
 class CrudOperator:
-    def __init__(self, model, session=None):
+    def __init__(self, model, session_test=None):
         self.model = model
-        self.session = session or md.db.session
+        self.session = session_test or md.db.session
 
     def get_all(self):
         return self.model.query.all()
@@ -35,7 +35,6 @@ class CrudOperator:
     
     def commit(self):
         self.session.commit()
-        
 
     def _filter(self, data):
         # TODO: Change this to accept only the model attributes using hasattr

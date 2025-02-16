@@ -26,48 +26,49 @@ class _CreateExtensionController(CreateExtension):
     def __init__(self):
         self.candidate = None
         self.row_data = None
-        self.csv_file = None
+        self.extension_file = None
 
-    @property
+    
     def handler(self, business_handler_test=None):
         return business_handler_test or _CandidateBusinessHandler()
 
-    @property
+    
     def request(self, request_test=None):
         return request_test or fk.request.args
 
-    @property
+    
     def request_body(self, request_test=None):
         return request_test or fk.request.get_json()
+    
     @property
     def data_serializer(self, serializer_test=None):
         return serializer_test or _DataSerializer
 
-    @property
+    
     def row_excel_data(self, row_excel_data_test=None):
-        return row_excel_data_test or writer.RowExcelData
+        return row_excel_data_test or writer
 
-    def prepare_data(self):
-        page = self.request.get("page", type=int)
-        per_page = self.request.get("per_page", 3, type=int)
-        candidate_id = self.request_body.get("candidate_id")
+    def prepare_data(self,page_test=None,per_page_test=None,candidate_id_test=None,handler_test=None):
+        page = self.request(page_test).get("page", type=int)
+        per_page = self.request(per_page_test).get("per_page", 3, type=int)
+        candidate_id = self.request_body(candidate_id_test).get("candidate_id")
         if candidate_id:
-            self.candidate = self.handler.get(candidate_id)
+            self.candidate = self.handler(handler_test).get(candidate_id)
         elif page:
-            self.candidate = self.handler.get_paginated(page, per_page)
+            self.candidate = self.handler(handler_test).get_paginated(page, per_page)
         else:
-            self.candidate = self.handler.get_all()
+            self.candidate = self.handler(handler_test).get_all()
         serializer = self.data_serializer(self.candidate).data_serialize()
-        self.row_data = self.row_excel_data(serializer)
+        self.row_data = self.row_excel_data(page_test).RowExcelData(serializer)
 
     def create_file(self, extension):
-        self.csv_file = extension
+        self.extension_file = extension
 
-    def data_manger(self):
-        return writer.DataManger
+    def data_manger(self,data_manger_test=None):
+        return data_manger_test or  writer
 
-    def save_file(self, filename):
-        manger = writer.DataManger(self.csv_file)
+    def save_file(self, filename,data_manger_test=None):
+        manger = self.data_manger(data_manger_test).DataManger(self.extension_file)
         manger.save(self.row_data, filename)
         return self.candidate
 
@@ -78,32 +79,35 @@ class _CandidateController:
     def __init__(self, candidate_test=None):
         self.request_body = candidate_test or fk.request.get_json()
 
-    @property
+    
     def handler(self, handler_test=None):
         return handler_test or _CandidateBusinessHandler()
 
-    @property
+    
     def request(self, request_test=None):
-        return request_test or fk.request.args.get
+        return request_test or fk.request.args
 
-    @property
-    def _extension_creator(self, extension_creator_test=None):
+    
+    def extension_creator(self, extension_creator_test=None):
         return extension_creator_test or _ExtensionCreator
+    
+    def candidate_info(self, candidate_info_test=None,request_body=None):
+        return candidate_info_test or ci._Candidateinfo
 
-    def create(self):
+    def create(self,operation_test=None,info_test=None,add_test=None):
         try:
-            operation = self.request("operation")
-            info = self.request("info")
+            operation = self.request(operation_test).get("operation")
+            info = self.request(info_test).get("info")
             file_name = self.request_body.get("fileName")
             if operation:
                 _CreateExtensionValidator(self.request_body).All_validate()
-                record = self._extension_creator(operation).export(file_name)
+                record = self.extension_creator(operation).export(file_name)
                 return _Serializer(record, file_name).All_serialize(),http.HTTPStatus.CREATED,
             elif info:
                 return ci._Candidateinfo(info,self.request_body).post()
             else:
                 _AddCandidateValidator(self.request_body).All_validate()
-                record = self.handler.post(self.request_body)
+                record = self.handler(add_test).post(self.request_body)
                 return _Serializer(record, file_name).All_serialize(),http.HTTPStatus.CREATED,
         except exceptions._RequiredInputError as exc:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
@@ -111,12 +115,8 @@ class _CandidateController:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
         except exceptions._InvalidFieldError as exc:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-
         except exceptions._NotFoundError as exc:
-            return (
-                _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),
-                http.HTTPStatus.NOT_FOUND,
-            )
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
 
 # builder Director
@@ -128,9 +128,9 @@ ExtensionCreator = {
 
 
 class _ExtensionCreator:
-    def __init__(self, operation):
+    def __init__(self, operation,extension_test=None):
         self.operation = operation
-        self._create_controller = _CreateExtensionController()
+        self._create_controller = extension_test or _CreateExtensionController()
         self._extension = None
 
     @property
@@ -198,8 +198,6 @@ class _CreateExtensionValidator:
     def _is_valid_fileName(self, fileName):
         if not isinstance(fileName, str):
             raise exceptions._InvalidInputError("fileName is not valid string")
-
-
 
 class _AddCandidateValidator:
     def __init__(self, json_body=None):
@@ -276,7 +274,7 @@ class _DataSerializer:
             "age": user.age,
             "email": user.email,
             "phone": user.phone,
-            "skills": ", ".join(skill.name for skill in user.skills) if user.skills else None,
+            "skills": ", ".join(skill.name for skill in user.skills),
             "degree": ", ".join(education.degree for education in user.education),
             "graduation_year": ", ".join(str(education.graduation_year) for education in user.education),
             "institution": ", ".join(education.institution for education in user.education),
