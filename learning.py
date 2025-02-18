@@ -53,3 +53,18 @@
 #         for attr in data:
 #             if hasattr(self.model, attr):
 #                 return data
+
+import jwt
+import datetime
+
+SECRET_KEY = "my_secret_key"
+
+payload = {
+    "username" : "karim",
+    "role" : "admin",
+    "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+}
+
+token = jwt.encode(payload,SECRET_KEY,algorithm="HS256")
+
+print( token)

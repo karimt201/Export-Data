@@ -17,12 +17,6 @@ paths:
       description: Create a new candidate with the provided information.
       operationId: all_candidate_export
       parameters:
-        - name: info
-          in: query
-          required: False
-          description: Information about the candidate (from query).
-          schema:
-            type: string
         - name: operation
           in: query
           required: False

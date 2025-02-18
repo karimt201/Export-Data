@@ -1,19 +1,20 @@
 import exceptions
-import datetime
 import http
 import data_handler as dh
 import flask as fk
 import models as md
 import datetime as dt
-
+import tokens as tk
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from extensions import app
 
 # Builder interface
-class info:
+class Info:
 
     def date_validator(self):
         raise exceptions._NotImplementError("children must implement this method")
 
-    def date_handler(self, candidate_id):
+    def date_handler(self):
         raise exceptions._NotImplementError("children must implement this method")
 
     def date_serializer(self):
@@ -21,9 +22,9 @@ class info:
 
 
 # Builders
-class _AddCandidateSkillsController(info):
+class _AddCandidateSkillsBuilder(Info):
     def __init__(self, body_request=None):
-        self.body_request = body_request
+        self.body_request = body_request or fk.request.get_json()
         self.candidate = None
         self.skill = None
 
@@ -57,9 +58,9 @@ class _AddCandidateSkillsController(info):
         return self.serializer(serializer_test).serialize(self.skill, self.candidate)
 
 
-class _AddCandidateApplicationController(info):
+class _AddCandidateApplicationBuilder(Info):
     def __init__(self, body_request=None):
-        self.body_request = body_request
+        self.body_request = body_request or fk.request.get_json()
         self.response = None
 
     def validator(self, validator_test=None):
@@ -81,9 +82,9 @@ class _AddCandidateApplicationController(info):
         return self.serializer(serializer_test).serialize(self.response)
 
 
-class _AddCandidateExperienceController(info):
+class _AddCandidateExperienceBuilder(Info):
     def __init__(self, body_request=None):
-        self.body_request = body_request
+        self.body_request = body_request or fk.request.get_json()
         self.response = None
 
     def validator(self, validator_test=None):
@@ -105,9 +106,9 @@ class _AddCandidateExperienceController(info):
         return self.serializer(serializer_test).serialize(self.response)
 
 
-class _AddCandidateEducationController(info):
+class _AddCandidateEducationBuilder(Info):
     def __init__(self, body_request=None):
-        self.body_request = body_request
+        self.body_request = body_request or fk.request.get_json()
         self.response = None
 
     def validator(self, validator_test=None):
@@ -129,89 +130,126 @@ class _AddCandidateEducationController(info):
         return self.serializer(serializer_test).serialize(self.response)
 
 
-# info query paramater
-CandidatesInfo = {
-    "skills": _AddCandidateSkillsController,
-    "education": _AddCandidateEducationController,
-    "experience": _AddCandidateExperienceController,
-    "applications": _AddCandidateApplicationController,
-}
 
 
-# builder Director
-class _Candidateinfo:
-    def __init__(self, info, request_body):
-        self.get_candidate_info = info
-        self.candidate_info_return = None
-        self.request_body = request_body
+class _AddCandidateSkillsController:
+    def __init__(self):
+        self.add_candidate_skills = _AddCandidateSkillsBuilder()
+        
+    def add(self):
+        try:
+            self.add_candidate_skills.date_validator()
+            self.add_candidate_skills.date_handler()
+            return self.add_candidate_skills.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        
+class _AddCandidateEducationController:
+    def __init__(self):
+        self.add_candidate_education = _AddCandidateEducationBuilder()
+        
+    def add(self):
+        try:
+            self.add_candidate_education.date_validator()
+            self.add_candidate_education.date_handler()
+            return self.add_candidate_education.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
 
-    def candidates_info(self, candidate_info_test=None):
-        return candidate_info_test or CandidatesInfo
-
-    def info(self, candidate_info_test):
-        candidate_info = self.candidates_info(candidate_info_test).get(
-            self.get_candidate_info
-        )
-        self.candidate_info_return = candidate_info(self.request_body)
-        return self.candidate_info_return
-
-    def post(self, request_test=None, info_test=None):
-        info_obj = self.info(info_test)
-        info_obj.date_validator()
-        info_obj.date_handler()
-        return info_obj.date_serializer()
-
+class _AddCandidateExperienceController:
+    def __init__(self):
+        self.add_candidate_experience = _AddCandidateExperienceBuilder()
+        
+    def add(self):
+        try:
+            self.add_candidate_experience.date_validator()
+            self.add_candidate_experience.date_handler()
+            return self.add_candidate_experience.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+    
+class _AddCandidateApplicationController:
+    def __init__(self):
+        self.add_candidate_application = _AddCandidateApplicationBuilder()
+        
+    def add(self):
+        try:
+            self.add_candidate_application.date_validator()
+            self.add_candidate_application.date_handler()
+            return self.add_candidate_application.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
 
 # BusinessHandler / wrapper
 class _ApplicationBusinessHandler:
-    def __init__(self, candidate_test=None):
+    def __init__(self, candidate_test=None,token_test=None):
         self.data = candidate_test or dh.CrudOperator(md.ApplicationModel)
-
+        self.token = token_test or tk.Token().verify_token()
+        
     def post(self, request_body):
+        self.data.get_one(self.token['user_id'])
         record = self.data.create(request_body)
         return record
 
-
 class _ExperienceBusinessHandler:
-    def __init__(self, candidate_test=None):
+    def __init__(self, candidate_test=None,token_test=None):
         self.data = candidate_test or dh.CrudOperator(md.ExperienceModel)
+        self.token = token_test or tk.Token().verify_token()
 
     def post(self, request_body):
+        self.data.get_one(self.token['user_id'])
         record = self.data.create(request_body)
         return record
 
 
 class _EducationBusinessHandler:
-    def __init__(self, candidate_test=None):
+    def __init__(self, candidate_test=None,token_test=None):
         self.data = candidate_test or dh.CrudOperator(md.EducationModel)
+        self.token = token_test or tk.Token().verify_token()
 
     def post(self, request_body):
+        self.data.get_one(self.token['user_id'])
         record = self.data.create(request_body)
         return record
 
 
 class _SkillsBusinessHandler:
-    def __init__(self, candidate_test=None):
+    def __init__(self, candidate_test=None,token_test=None):
         self.data = candidate_test or dh.CrudOperator(md.SkillModel)
+        self.token = token_test or tk.Token().verify_token()
 
     def candidate_handler(self, candidate_handler_test=None):
         return candidate_handler_test or _CandidateBusinessHandler()
     
     def post(self, request_body, candidate_id,candidate_handler_test=None):
+        self.data.get_one(self.token['user_id'])
         skill_name = request_body.get("name")
         candidate = self.candidate_handler(candidate_handler_test).get(candidate_id)
-        skill = self.data.filter_data(skill_name)
+        skill = self.data.user_filter_data(name=skill_name).first()
         if not skill:
-            skill = self.add_post(request_body)
+            skill = self.data.create_many(request_body)
         if skill in candidate.skills:
             raise exceptions._InvalidInputError("this candidate has this skill already")
         candidate.skills.append(skill)
         self.data.commit()
         return skill
 
-    def add_post(self, request_body):
-        record = self.data.create_many(request_body)
-        return record
 
 
 class _CandidateBusinessHandler:
@@ -227,13 +265,22 @@ class _CandidateBusinessHandler:
 
 # Validation
 class _AddApplicationValidator:
+    def __init__(self,token_test=None):
+        self.token = token_test or fk.request.headers.get('Authorization')
+        
     def validate(self, body,body_test=None):
-        return self.is_valid_date(body.get("date"),body_test)
+        self.is_valid_token(self.token)
+        self.is_valid_date(body.get("date"),body_test)
+        self.is_valid_candidate_id(body.get("candidate_id"))
 
+    def is_valid_token(self, token):
+        if not token:
+            raise exceptions._RequiredInputError("token is missing")
+        
     def is_valid_date(self, date,body_test=None):
         if not date:
             raise exceptions._RequiredInputError("date is required")
-        return self._is_valid_date(date,body_test)
+        self._is_valid_date(date,body_test)
 
     def data_time(self,date_time_test=None):
         return date_time_test or dt.datetime
@@ -245,16 +292,34 @@ class _AddApplicationValidator:
             raise exceptions._InvalidInputError(
                 f"{date} is not in valid date format (YYYY-MM-DD)"
             )
+    def is_valid_candidate_id(self, candidate_id):
+        if not candidate_id:
+            raise exceptions._RequiredInputError("candidate_id is required")
+        self._is_valid_candidate_id(candidate_id)
+
+    def _is_valid_candidate_id(self, candidate_id):
+        if not isinstance(candidate_id, (int)):
+            raise exceptions._InvalidInputError("candidate_id is not valid int")
+
+
 
 
 class _AddExperienceValidator:
+    def __init__(self,token_test=None):
+        self.token = token_test or fk.request.headers.get('Authorization')
 
     def validate(self, body,body_test=None):
+        self.is_valid_token(self.token)
         self.is_valid_company(body.get("company"))
         self.is_valid_position(body.get("position"))
         self.is_valid_start_date(body.get("start_date"),body_test)
         self.is_valid_end_date(body.get("end_date"),body_test)
+        self.is_valid_candidate_id(body.get("candidate_id"))
 
+    def is_valid_token(self, token):
+        if not token:
+            raise exceptions._RequiredInputError("token is missing")
+        
     def is_valid_company(self, company):
         if not company:
             raise exceptions._RequiredInputError("company is required")
@@ -306,15 +371,33 @@ class _AddExperienceValidator:
             raise exceptions._InvalidInputError(
                 f"{end_date} is not in valid date format (YYYY-MM-DD)"
             )
+    def is_valid_candidate_id(self, candidate_id):
+        if not candidate_id:
+            raise exceptions._RequiredInputError("candidate_id is required")
+        self._is_valid_candidate_id(candidate_id)
+
+    def _is_valid_candidate_id(self, candidate_id):
+        if not isinstance(candidate_id, (int)):
+            raise exceptions._InvalidInputError("candidate_id is not valid int")
+
+
 
 
 class _AddEducationValidator:
+    def __init__(self,token_test=None):
+        self.token = token_test or fk.request.headers.get('Authorization')
 
     def validate(self, body):
+        self.is_valid_token(self.token)
         self.is_valid_degree(body.get("degree"))
         self.is_valid_graduation_year(body.get("graduation_year"))
         self.is_valid_institution(body.get("institution"))
+        self.is_valid_candidate_id(body.get("candidate_id"))
 
+    def is_valid_token(self, token):
+        if not token:
+            raise exceptions._RequiredInputError("token is missing")
+        
     def is_valid_degree(self, degree):
         if not degree:
             raise exceptions._RequiredInputError("degree is required")
@@ -341,13 +424,30 @@ class _AddEducationValidator:
     def _is_valid_institution(self, institution):
         if not isinstance(institution, str):
             raise exceptions._InvalidInputError("institution is not valid string")
+    def is_valid_candidate_id(self, candidate_id):
+        if not candidate_id:
+            raise exceptions._RequiredInputError("candidate_id is required")
+        self._is_valid_candidate_id(candidate_id)
+
+    def _is_valid_candidate_id(self, candidate_id):
+        if not isinstance(candidate_id, (int)):
+            raise exceptions._InvalidInputError("candidate_id is not valid int")
+
 
 
 class _AddSkillsValidator:
+    def __init__(self,token_test=None):
+        self.token = token_test or fk.request.headers.get('Authorization')
 
     def validate(self, body):
+        self.is_valid_token(self.token)
         self.is_valid_name(body.get("name"))
+        self.is_valid_candidate_id(body.get("candidate_id"))
 
+    def is_valid_token(self, token):
+        if not token:
+            raise exceptions._RequiredInputError("token is missing")
+        
     def is_valid_name(self, name):
         if not name:
             raise exceptions._RequiredInputError("name is required")
@@ -356,6 +456,15 @@ class _AddSkillsValidator:
     def _is_valid_name(self, name):
         if not isinstance(name, str):
             raise exceptions._InvalidInputError("name is not valid string")
+        
+    def is_valid_candidate_id(self, candidate_id):
+        if not candidate_id:
+            raise exceptions._RequiredInputError("candidate_id is required")
+        self._is_valid_candidate_id(candidate_id)
+
+    def _is_valid_candidate_id(self, candidate_id):
+        if not isinstance(candidate_id, (int)):
+            raise exceptions._InvalidInputError("candidate_id is not valid int")
 
 
 # Serialization
@@ -414,3 +523,12 @@ class _SkillsSerializer:
             "candidate_id": candidate.id,
             "candidate_name": candidate.name,
         }, self.http_test(status_test).OK
+
+# ErrorSerialize
+class _ErrorSerialize:
+    def core_error_serialize(self, error, status):
+        return {
+            "status": status,
+            "description": status.phrase,
+            "message": error.message,
+        }

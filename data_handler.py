@@ -33,6 +33,13 @@ class CrudOperator:
         # self.session.commit()
         return record
     
+    def create_user(self,request_data,email,password):
+        self._filter(request_data)
+        record = self.model(email=email,password=password)
+        self.session.add(record)
+        self.session.commit()
+        return record
+    
     def commit(self):
         self.session.commit()
 
@@ -50,4 +57,8 @@ class CrudOperator:
     
     def filter_data(self,name):
         return self.model.query.filter_by(name=name).first()
+    
+    @property
+    def user_filter_data(self):
+        return self.model.query.filter_by
                 

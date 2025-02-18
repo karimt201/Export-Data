@@ -63,3 +63,11 @@ class ApplicationModel(db.Model):
     date = db.Column(db.String(80), unique=False, nullable=False)
     candidate_id = db.Column(db.Integer,db.ForeignKey("candidates.id"),nullable=False)
     candidate= db.relationship("CandidateModel",back_populates="applications")
+
+class UserModel(db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(80), unique=False, nullable=False)
+    password = db.Column(db.String(80), unique=False, nullable=False)
+
