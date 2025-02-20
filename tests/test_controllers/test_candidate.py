@@ -6,14 +6,14 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-import controllers.candidate as candidate
+import controllers.export_candidate as export_candidate
 import data_handler as dh
 import exceptions
 
 
 class TestCreateExtension(unittest.TestCase):
     def test_create_extension(self):
-        create_extension = candidate.CreateExtension()
+        create_extension = export_candidate.CreateExtension()
         with self.assertRaises(exceptions._NotImplementError) as prepare_data_exc:
             create_extension.prepare_data()
         assert_that(str(prepare_data_exc.exception)).is_equal_to(
@@ -36,7 +36,7 @@ class TestCreateExtensionController(unittest.TestCase):
         self.create_extension_per_page_double = CreateExtensionPerPageDouble()
         self.create_extension_candidate_id_double = CreateExtensionCandidateIdDouble()
         self.create_extension_handler_double = CreateExtensionHandlerDouble()
-        self.create_extension_controller = candidate._CreateExtensionController()
+        self.create_extension_controller = export_candidate._CreateExtensionController()
         
     def test_create_extension(self):
         self.create_extension_controller.prepare_data(
@@ -270,7 +270,7 @@ class TestCandidateController(unittest.TestCase):
         self.candidate_operation_double = CandidateOperationDouble()
         self.candidate_info_double = CandidateInfoDouble()
         self.add_candidate_double = AddCandidateDouble()
-        self.candidate_controller = candidate._CandidateController(self.candidate_request_body_double)
+        self.candidate_controller = export_candidate._CandidateController(self.candidate_request_body_double)
         
     def test_candidate_controller(self):
         self.candidate_controller.create(
@@ -430,7 +430,7 @@ class CrudOperatorSessionDouble:
 class TestExtensionCreator(unittest.TestCase):
     def setUp(self):
         self.extension_creator_double = ExtensionCreatorDouble()
-        self.extension_creator = candidate._ExtensionCreator("csv",self.extension_creator_double)
+        self.extension_creator = export_candidate._ExtensionCreator("csv",self.extension_creator_double)
     def test_extension_creator(self):
         self.extension_creator.export("filename.csv",self.extension_creator_double)
         self.extension_creator_double.assert_that_extension_creator_hold_extension("csv")
@@ -471,7 +471,7 @@ class ExtensionCreatorDouble:
 class TestCandidateBusinessHandler(unittest.TestCase):
     def setUp(self):
         self.candidate_business_handler_double = CandidateBusinessHandlerDouble()
-        self.candidate_business_handler = candidate._CandidateBusinessHandler(self.candidate_business_handler_double)
+        self.candidate_business_handler = export_candidate._CandidateBusinessHandler(self.candidate_business_handler_double)
     
     def test_candidate_business_handler(self):
         self.candidate_business_handler.post({"name":"karim"})
@@ -520,7 +520,7 @@ class CandidateBusinessHandlerDouble:
 
 class TestCreateExtensionValidator(unittest.TestCase):
     def setUp(self):
-        self.create_extension_validator = candidate._CreateExtensionValidator()
+        self.create_extension_validator = export_candidate._CreateExtensionValidator()
         
     def test_add_skills_validator(self):
         data = {
@@ -540,7 +540,7 @@ class TestCreateExtensionValidator(unittest.TestCase):
         
 class TestAddCandidateValidator(unittest.TestCase):
     def setUp(self):
-        self.add_candidate_validator = candidate._AddCandidateValidator()
+        self.add_candidate_validator = export_candidate._AddCandidateValidator()
         
     def test_add_candidate_validator(self):
         data = {
@@ -593,7 +593,7 @@ class TestAddCandidateValidator(unittest.TestCase):
 
 class TestErrorSerialize(unittest.TestCase):
     def setUp(self):
-        self.error_serialize = candidate._ErrorSerialize()
+        self.error_serialize = export_candidate._ErrorSerialize()
         
     def test_error_serialize(self):
         self.error_serialize_status_double = ErrorSerializeStatusDouble()

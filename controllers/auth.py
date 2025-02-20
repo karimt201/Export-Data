@@ -7,30 +7,116 @@ import re
 import datetime as dt
 from passlib.hash import pbkdf2_sha256
 import tokens as tk
-
+import controllers.candidate_info as cd
 
 class Auth:
-
-    def date_validator(self):
+    def login(self):
         raise exceptions._NotImplementError("children must implement this method")
 
-    def date_handler(self):
-        raise exceptions._NotImplementError("children must implement this method")
+        
+class _LoginController(Auth):
+    
+    def login(self):
+        try:
+            log_in = _LoginBuilder()
+            log_in.date_validator()
+            log_in.date_handler()
+            return log_in.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+    
+class _UserController(cd.CurdOperation):
 
-    def date_serializer(self):
-        raise exceptions._NotImplementError("children must implement this method")
+    def create(self,builder_test=None):
+        try:
+            add_user = builder_test or _AddUserBuilder()
+            add_user.date_validator()
+            add_user.date_handler()
+            return add_user.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
+    def update(self,id,builder_test=None):
+        try:
+            update_user = builder_test or _UpdateUserBuilder()
+            update_user.date_validator()
+            update_user.date_handler(id)
+            return update_user.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
-class _RegisterBuilder(Auth):
+    def get(self,id,builder_test=None):
+        try:
+            read_user = builder_test or _ReadUserBuilder()
+            read_user.date_validator()
+            read_user.date_handler(id)
+            return read_user.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
+
+    def get_all(self,builder_test=None):
+        try:
+            read_all_user = builder_test or _ReadAllUserBuilder()
+            read_all_user.date_validator()
+            read_all_user.date_handler()
+            return read_all_user.date_serializer()
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
+
+    def delete(self,id,builder_test=None):
+        try:
+            delete_user = builder_test or _DeleteUserBuilder()
+            delete_user.date_validator()
+            delete_user.date_handler(id)
+            return delete_user.date_serializer(id)
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
+    
+
+class _AddUserBuilder:
     def __init__(self,body_test=None):
         self.body_request = body_test or fk.request.get_json()
         self.response = None
 
     def validator(self, validator_test=None):
-        return validator_test or _RegisterValidator()
+        return validator_test or _UserValidator()
 
-    def experience_handler(self, handler_test=None):
-        return handler_test or _RegisterBusinessHandler()
+    def handler(self, handler_test=None):
+        return handler_test or _UserBusinessHandler()
 
     def serializer(self, serializer_test=None):
         return serializer_test or _RegisterSerializer()
@@ -39,12 +125,114 @@ class _RegisterBuilder(Auth):
         return self.validator(validator_test).validate(self.body_request)
 
     def date_handler(self, handler_test=None):
-        self.response = self.experience_handler(handler_test).post(self.body_request)
+        self.response = self.handler(handler_test).post(self.body_request)
 
     def date_serializer(self, serializer_test=None):
         return self.serializer(serializer_test).serialize(self.response)
 
-class _LoginBuilder(Auth):
+class _UpdateUserBuilder:
+    def __init__(self, body_request=None):
+        self.body_request = body_request or fk.request.get_json()
+        self.response = None
+
+    def validator(self, validator_test=None):
+        return validator_test or _TokenValidator()
+    
+    def handler(self, handler_test=None):
+        return handler_test or _UserBusinessHandler()
+
+    def serializer(self, serializer_test=None):
+        return serializer_test or _UserSerializer()
+
+    def http_test(self,status_test=None):
+        return status_test or http.HTTPStatus
+
+    def date_validator(self, validator_test=None):
+        return self.validator(validator_test).validate()
+    
+    def date_handler(self,id, handler_test=None):
+        self.response = self.handler(handler_test).update(id,self.body_request)
+
+    def date_serializer(self, serializer_test=None,status_test=None):
+        return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
+
+
+class _ReadAllUserBuilder:
+    def __init__(self):
+        self.response = None
+
+    def validator(self, validator_test=None):
+        return validator_test or _TokenValidator()
+    
+    def handler(self, handler_test=None):
+        return handler_test or _UserBusinessHandler()
+
+    def serializer(self, serializer_test=None):
+        return serializer_test or _UserSerializer()
+
+    def http_test(self,status_test=None):
+        return status_test or http.HTTPStatus
+    
+    def date_validator(self, validator_test=None):
+        return self.validator(validator_test).validate()
+
+    def date_handler(self, handler_test=None):
+        self.response = self.handler(handler_test).get_all()
+
+    def date_serializer(self, serializer_test=None,status_test=None):
+        return self.serializer(serializer_test).All_serialize(self.response),self.http_test(status_test).OK
+
+class _ReadUserBuilder:
+    def __init__(self):
+        self.response = None
+
+    def validator(self, validator_test=None):
+        return validator_test or _TokenValidator()
+    
+    def handler(self, handler_test=None):
+        return handler_test or _UserBusinessHandler()
+
+    def serializer(self, serializer_test=None):
+        return serializer_test or _UserSerializer()
+
+    def http_test(self,status_test=None):
+        return status_test or http.HTTPStatus
+
+    def date_validator(self, validator_test=None):
+        return self.validator(validator_test).validate()
+
+    def date_handler(self,id, handler_test=None):
+        self.response = self.handler(handler_test).get(id)
+
+    def date_serializer(self, serializer_test=None,status_test=None):
+        return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
+
+class _DeleteUserBuilder:
+    def __init__(self):
+        self.response = None
+        
+    def validator(self, validator_test=None):
+        return validator_test or _TokenValidator()
+    
+    def handler(self, handler_test=None):
+        return handler_test or _UserBusinessHandler()
+
+    def serializer(self, serializer_test=None):
+        return serializer_test or _DeleteSerializer()
+
+    def http_test(self,status_test=None):
+        return status_test or http.HTTPStatus
+    
+    def date_validator(self, validator_test=None):
+        return self.validator(validator_test).validate()
+
+    def date_handler(self,id, handler_test=None):
+        self.response = self.handler(handler_test).delete(id)
+
+    def date_serializer(self,id, serializer_test=None,status_test=None):
+        return self.serializer(serializer_test).serialize(id),self.http_test(status_test).OK
+
+class _LoginBuilder:
     def __init__(self,body_test=None):
         self.body_request = body_test or fk.request.get_json()
         self.response = None
@@ -67,40 +255,7 @@ class _LoginBuilder(Auth):
     def date_serializer(self, serializer_test=None):
         return self.serializer(serializer_test).serialize(self.response)
 
-class _LoginController:
-    def __init__(self):
-        self.log_in = _LoginBuilder()
-        
-    def login(self):
-        try:
-            self.log_in.date_validator()
-            self.log_in.date_handler()
-            return self.log_in.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-    
-class _RegisterController:
-
-    def __init__(self):
-        self.register_builder = _RegisterBuilder()
-        
-    def register(self):
-        try:
-            self.register_builder.date_validator()
-            self.register_builder.date_handler()
-            return self.register_builder.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-
-class _RegisterValidator:
+class _UserValidator:
 
     def validate(self, body):
         self.is_valid_email(body.get("email"))
@@ -119,6 +274,18 @@ class _RegisterValidator:
         if not password:
             raise exceptions._RequiredInputError("password is required")
         
+
+class _TokenValidator:
+    def __init__(self,token_test=None):
+        self.token = token_test or fk.request.headers.get('Authorization')
+
+    def validate(self):
+        self.is_valid_token(self.token)
+
+    def is_valid_token(self, token):
+        if not token:
+            raise exceptions._RequiredInputError("token is missing")
+
         
 class _LoginValidator:
 
@@ -144,22 +311,56 @@ class _LoginValidator:
         if not role:
             raise exceptions._RequiredInputError("role is required")
 
-class _RegisterBusinessHandler:
-    def __init__(self, candidate_test=None):
+class _UserBusinessHandler:
+    def __init__(self, candidate_test=None,token_test=None):
         self.data = candidate_test or dh.CrudOperator(md.UserModel)
+        self.token = token_test or tk.Token()
 
     def hash_pass(self,hash_test=None):
         return hash_test or pbkdf2_sha256
     
     def post(self, request_body,hash_test=None):
-        get_email = request_body.get("email")
+        user_email = request_body.get("email")
         password = self.hash_pass(hash_test).hash(request_body.get("password"))
-        user = self.data.user_filter_data(email=get_email).first()
+        user = self.data.user_filter_data(email=user_email).first()
         if not user:
-            new_user = self.data.create_user(request_body,get_email,password)
+            request_body['password'] = password
+            new_user = self.data.create(request_body)
         if user :
             raise exceptions._InvalidInputError("User is already registered!")
         return new_user
+    
+    def get_all(self):
+        token = self.token.verify_token()
+        self.data.get_one(token['user_id'])
+        records = self.data.get_all()
+        if not records:
+            raise exceptions._NotFoundError("Records does not exist")
+        return records
+    
+    def get(self, _id):
+        token = self.token.verify_token()
+        self.data.get_one(token['user_id'])
+        record = self.data.get_one(_id)
+        if not record:
+            raise exceptions._NotFoundError("Record does not exist")
+        return record
+    
+    def update(self,id,request_body,hash_test=None):
+        token = self.token.verify_token()
+        self.data.get_one(token['user_id'])
+        password = request_body.get("password")
+        if password :
+            hashed_password = self.hash_pass(hash_test).hash(password)
+            request_body['password'] = hashed_password
+        record = self.data.update(id,request_body)
+        return record
+    
+    def delete(self,id):
+        token = self.token.verify_token()
+        self.data.get_one(token['user_id'])
+        record = self.data.delete(id)
+        return record
 
 
 class _LoginBusinessHandler:
@@ -190,15 +391,27 @@ class _LoginBusinessHandler:
             raise exceptions._InvalidInputError("email or password not valid")
         
 
+class _UserSerializer:
+
+    def All_serialize(self,user):
+        if isinstance(user, list):
+            return [self.serialize(user) for user in user]
+        return self.serialize(user)
+    
+    def serialize(self, user):
+        return {
+            "user":user.id,
+            "email":user.email,
+        }
+        
 class _RegisterSerializer:
 
-    def http_test(self,status_test=None):
-        return status_test or http.HTTPStatus
-    
-    def serialize(self, user,status_test=None):
+    def serialize(self, user):
         return {
-            'message': f'{user.email} registered successfully!'
-        }, self.http_test(status_test).OK
+            "user":user.id,
+            "email":user.email,
+            'message': f'user id {user.id} registered successfully!'
+        }
 
 class _LoginSerializer:
 
@@ -211,11 +424,10 @@ class _LoginSerializer:
             'message': 'Log in successfully!'
         }, self.http_test(status_test).OK
 
-# ErrorSerialize
-class _ErrorSerialize:
-    def core_error_serialize(self, error, status):
+
+class _DeleteSerializer:
+    
+    def serialize(self, id):
         return {
-            "status": status,
-            "description": status.phrase,
-            "message": error.message,
+            "message":f"record id {id} has been removed successfully"
         }

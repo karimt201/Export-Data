@@ -1,43 +1,860 @@
 openapi: 3.0.3
 info:
-  title: Talantino
-  version: 1.0.11
+  title: Export-Data API
+  version: 1.0.0
+  description: API for managing candidates, their applications, skills, education, and experience.
 servers:
-  - url: http://localhost:5000
-tags:
-  - name: Candidates
-    description: Generate candidate data in Excel,csv,pdf formats.
+  - url: http://127.0.0.1:5000
+    description: Local server
 
 paths:
-  /candidates:
+  /login:
     post:
       tags:
-        - Candidates
-      summary: Create a new candidate
-      description: Create a new candidate with the provided information.
-      operationId: all_candidate_export
-      parameters:
-        - name: operation
-          in: query
-          required: False
-          description: The operation to be performed (from query).
-          schema:
-            type: string
+        - User
+      summary: User login
+      description: Authenticate a user and return a token.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-
+              properties:
+                email:
+                  type: string
+                  example: karim@gmail.com
+                password:
+                  type: string
+                  example: qwerty
+                role:
+                  type: string
+                  example: Admin
       responses:
-        "200":
-          description: Candidate created successfully
+        '200':
+          description: Successful login
           content:
             application/json:
               schema:
                 type: object
-        "400":
-          description: Invalid input
-        "422":
-          description: Validation exception
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  /user:
+    post:
+      tags:
+        - User
+      summary: User registration
+      description: Register a new user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: omar@gmail.com
+                password:
+                  type: string
+                  example: qwerty
+      responses:
+        '201':
+          description: User registered successfully
+    
+    get:
+      tags:
+        - User
+      summary: Get all users
+      description: Retrieve a list of all users.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'      
+  
+  /user/{id}:
+    get:
+      tags:
+        - User
+      summary: Get a user by ID
+      description: Retrieve a specific user by their ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    put:
+      tags:
+        - User
+      summary: Update a user
+      description: Update a user's details.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "karim@gmail.com"
+      responses:
+        '200':
+          description: User updated successfully
+
+    delete:
+      tags:
+        - User
+      summary: Delete a user
+      description: Delete a user by their ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: User deleted successfully
+
+  
+  /candidate:
+    post:
+      tags:
+        - Candidate
+      summary: Add a new candidate
+      description: Add a new candidate to the system.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: karim
+                age:
+                  type: integer
+                  example: 10
+                email:
+                  type: string
+                  example: karim@gmail.com
+                phone:
+                  type: string
+                  example: "01010101001"
+      responses:
+        '201':
+          description: Candidate added successfully
+
+    get:
+      tags:
+        - Candidate
+      summary: Get all candidates
+      description: Retrieve a list of all candidates.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A list of candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Candidate'
+
+  /candidate/{id}:
+    get:
+      tags:
+        - Candidate
+      summary: Get a candidate by ID
+      description: Retrieve a specific candidate by their ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Candidate details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Candidate'
+
+    put:
+      tags:
+        - Candidate
+      summary: Update a candidate
+      description: Update a candidate's details.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                age:
+                  type: integer
+                  example: 20
+      responses:
+        '200':
+          description: Candidate updated successfully
+
+    delete:
+      tags:
+        - Candidate
+      summary: Delete a candidate
+      description: Delete a candidate by their ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Candidate deleted successfully
+
+  /candidate/application:
+    post:
+      tags:
+        - Application
+      summary: Add a candidate application
+      description: Add a new application for a candidate.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                  example: "2010-10-5"
+                candidate_id:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: Application added successfully
+
+    get:
+      tags:
+        - Application
+      summary: Get all candidate applications
+      description: Retrieve a list of all candidate applications.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A list of applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Application'
+
+  /candidate/application/{id}:
+    get:
+      tags:
+        - Application
+      summary: Get a candidate application by ID
+      description: Retrieve a specific application by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+
+    put:
+      tags:
+        - Application
+      summary: Update a candidate application
+      description: Update a candidate application's details.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                  example: "2010-11-2"
+      responses:
+        '200':
+          description: Application updated successfully
+
+    delete:
+      tags:
+        - Application
+      summary: Delete a candidate application
+      description: Delete a candidate application by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Application deleted successfully
+
+  /candidate/skills:
+    post:
+      tags:
+        - Skills
+      summary: Add a candidate skill
+      description: Add a new skill for a candidate.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: playing
+                candidate_id:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: Skill added successfully
+
+    get:
+      tags:
+        - Skills
+      summary: Get all candidate skills
+      description: Retrieve a list of all candidate skills.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A list of skills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+
+  /candidate/skills/{id}:
+    get:
+      tags:
+        - Skills
+      summary: Get a candidate skill by ID
+      description: Retrieve a specific skill by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Skill details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+
+    put:
+      tags:
+        - Skills
+      summary: Update a candidate skill
+      description: Update a candidate skill's details.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: listen
+      responses:
+        '200':
+          description: Skill updated successfully
+
+    delete:
+      tags:
+        - Skills
+      summary: Delete a candidate skill
+      description: Delete a candidate skill by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Skill deleted successfully
+
+  /candidate/education:
+    post:
+      tags:
+        - Education
+      summary: Add a candidate education
+      description: Add a new education record for a candidate.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                degree:
+                  type: string
+                  example: bachelor of commerce
+                graduation_year:
+                  type: integer
+                  example: 2020
+                institution:
+                  type: string
+                  example: Cairo university
+                candidate_id:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: Education added successfully
+
+    get:
+      tags:
+        - Education
+      summary: Get all candidate education
+      description: Retrieve a list of all candidate education records.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A list of education records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Education'
+
+  /candidate/education/{education_id}:
+    get:
+      tags:
+        - Education
+      summary: Get a candidate education by ID
+      description: Retrieve a specific education record by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: education_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Education details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Education'
+
+    put:
+      tags:
+        - Education
+      summary: Update a candidate education
+      description: Update a candidate education record's details.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: education_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                graduation_year:
+                  type: integer
+                  example: 2010
+      responses:
+        '200':
+          description: Education updated successfully
+
+    delete:
+      tags:
+        - Education
+      summary: Delete a candidate education
+      description: Delete a candidate education record by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: education_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Education deleted successfully
+
+  /candidate/experience:
+    post:
+      tags:
+        - Experience
+      summary: Add a candidate experience
+      description: Add a new experience record for a candidate.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company:
+                  type: string
+                  example: arete
+                position:
+                  type: string
+                  example: fullstack
+                start_date:
+                  type: string
+                  format: date
+                  example: "2010-10-10"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2010-10-15"
+                candidate_id:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: Experience added successfully
+
+    get:
+      tags:
+        - Experience
+      summary: Get all candidate experience
+      description: Retrieve a list of all candidate experience records.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A list of experience records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experience'
+
+  /candidate/experience/{id}:
+    get:
+      tags:
+        - Experience
+      summary: Get a candidate experience by ID
+      description: Retrieve a specific experience record by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Experience details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experience'
+
+    put:
+      tags:
+        - Experience
+      summary: Update a candidate experience
+      description: Update a candidate experience record's details.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                position:
+                  type: string
+                  example: backend
+      responses:
+        '200':
+          description: Experience updated successfully
+
+    delete:
+      tags:
+        - Experience
+      summary: Delete a candidate experience
+      description: Delete a candidate experience record by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Experience deleted successfully
+
+  /export/candidates:
+    post:
+      tags:
+        - Export
+      summary: Export all candidates
+      description: Export all candidates in the specified format (csv, xlsx, pdf).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: operation
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [csv, xlsx, pdf]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                  example: All_candidates.csv
+      responses:
+        '200':
+          description: File exported successfully
+          
+  /export/candidate:
+    post:
+      tags:
+          - Export
+      summary: Export candidate
+      description: Export candidate in the specified format (csv, xlsx, pdf).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: operation
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [csv, xlsx, pdf]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                  example: candidate.csv
+                candidate_id:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: File exported successfully
+          
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        age:
+          type: integer
+        email:
+          type: string
+        phone:
+          type: string
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+          format: date
+        candidate_id:
+          type: integer
+
+    Skill:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        candidate_id:
+          type: integer
+
+    Education:
+      type: object
+      properties:
+        id:
+          type: integer
+        degree:
+          type: string
+        graduation_year:
+          type: integer
+        institution:
+          type: string
+        candidate_id:
+          type: integer
+
+    Experience:
+      type: object
+      properties:
+        id:
+          type: integer
+        company:
+          type: string
+        position:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        candidate_id:
+          type: integer

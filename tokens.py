@@ -3,6 +3,7 @@ import extensions
 import flask as fk
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 import exceptions
+
 class Token:
     
     def create_token(self,payload):

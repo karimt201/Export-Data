@@ -75,11 +75,3 @@ class DataManger:
 
     def save(self, data, filename):
         return self.writer.write_export_files(data, filename)
-
-
-class Error(DataWriter):
-
-    def read(self, filename):
-        return "success"
-
-
