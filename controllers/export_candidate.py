@@ -1,47 +1,11 @@
 import flask as fk
 import http
-import exceptions
+import helper.exceptions as  exceptions
 import controllers.writer as writer
 import controllers.candidate_info as cd
 
 
-class Export:
-    def export_all_candidate(self):
-        raise exceptions._NotImplementError("children must implement this method")
-    
-    def export_candidate(self):
-        raise exceptions._NotImplementError("children must implement this method")
-
-class _ExportController(Export):
-    
-    def export_all_candidate(self,builder_test=None):
-        try:
-            export_all_candidate = builder_test or _ExportAllCandidateBuilder()
-            export_all_candidate.date_validator()
-            export_all_candidate.date_handler()
-            return export_all_candidate.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-    
-    def export_candidate(self,builder_test=None):
-        try:
-            export_candidate = builder_test or _ExportCandidateBuilder()
-            export_candidate.date_validator()
-            export_candidate.date_handler()
-            return export_candidate.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-
-
-class _ExportCandidateBuilder:
+class ExportCandidateController:
 
     def __init__(self, body_request=None):
         self.body_request = body_request or fk.request.get_json()
@@ -59,16 +23,12 @@ class _ExportCandidateBuilder:
     def http_test(self,status_test=None):
         return status_test or http.HTTPStatus
 
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate(self.body_request)
-
-    def date_handler(self, handler_test=None):
+    def export_candidate(self,validator_test=None, handler_test=None, serializer_test=None,status_test=None):
+        self.validator(validator_test).validate(self.body_request)
         self.response = self.handler(handler_test).export_candidate()
-
-    def date_serializer(self, serializer_test=None,status_test=None):
         return self.serializer(serializer_test).All_serialize(self.response),self.http_test(status_test).OK
 
-class _ExportAllCandidateBuilder:
+class ExportAllCandidateController:
 
     def __init__(self, body_request=None):
         self.body_request = body_request or fk.request.get_json()
@@ -86,13 +46,9 @@ class _ExportAllCandidateBuilder:
     def http_test(self,status_test=None):
         return status_test or http.HTTPStatus
 
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate(self.body_request)
-
-    def date_handler(self, handler_test=None):
+    def export_all_candidate(self,validator_test=None, handler_test=None, serializer_test=None,status_test=None):
+        self.validator(validator_test).validate(self.body_request)
         self.response = self.handler(handler_test).export_all_candidate()
-
-    def date_serializer(self, serializer_test=None,status_test=None):
         return self.serializer(serializer_test).All_serialize(self.response),self.http_test(status_test).OK
 
 

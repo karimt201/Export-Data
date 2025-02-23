@@ -1,113 +1,16 @@
 import flask as fk
-import exceptions
-import data_handler as dh
+import helper.exceptions as exceptions
+import services.data_handler as dh
 import models as md
 import http
 import re
 import datetime as dt
 from passlib.hash import pbkdf2_sha256
-import tokens as tk
+import services.tokens as tk
 import controllers.candidate_info as cd
 
-class Auth:
-    def login(self):
-        raise exceptions._NotImplementError("children must implement this method")
-
-        
-class _LoginController(Auth):
     
-    def login(self):
-        try:
-            log_in = _LoginBuilder()
-            log_in.date_validator()
-            log_in.date_handler()
-            return log_in.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-    
-class _UserController(cd.CurdOperation):
-
-    def create(self,builder_test=None):
-        try:
-            add_user = builder_test or _AddUserBuilder()
-            add_user.date_validator()
-            add_user.date_handler()
-            return add_user.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._NotFoundError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
-
-    def update(self,id,builder_test=None):
-        try:
-            update_user = builder_test or _UpdateUserBuilder()
-            update_user.date_validator()
-            update_user.date_handler(id)
-            return update_user.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._NotFoundError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
-
-    def get(self,id,builder_test=None):
-        try:
-            read_user = builder_test or _ReadUserBuilder()
-            read_user.date_validator()
-            read_user.date_handler(id)
-            return read_user.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._NotFoundError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
-
-    def get_all(self,builder_test=None):
-        try:
-            read_all_user = builder_test or _ReadAllUserBuilder()
-            read_all_user.date_validator()
-            read_all_user.date_handler()
-            return read_all_user.date_serializer()
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._NotFoundError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
-
-    def delete(self,id,builder_test=None):
-        try:
-            delete_user = builder_test or _DeleteUserBuilder()
-            delete_user.date_validator()
-            delete_user.date_handler(id)
-            return delete_user.date_serializer(id)
-        except exceptions._RequiredInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
-        except exceptions._InvalidInputError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._InvalidFieldError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
-        except exceptions._NotFoundError as exc:
-            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
-    
-
-class _AddUserBuilder:
+class RegisterController:
     def __init__(self,body_test=None):
         self.body_request = body_test or fk.request.get_json()
         self.response = None
@@ -120,17 +23,23 @@ class _AddUserBuilder:
 
     def serializer(self, serializer_test=None):
         return serializer_test or _RegisterSerializer()
+    
+    def register(self,validator_test=None,handler_test=None,serializer_test=None,status_test=None):
+        try:
+            self.validator(validator_test).validate(self.body_request)
+            self.response = self.handler(handler_test).post(self.body_request)
+            return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate(self.body_request)
 
-    def date_handler(self, handler_test=None):
-        self.response = self.handler(handler_test).post(self.body_request)
-
-    def date_serializer(self, serializer_test=None):
-        return self.serializer(serializer_test).serialize(self.response)
-
-class _UpdateUserBuilder:
+class UpdateUserController:
     def __init__(self, body_request=None):
         self.body_request = body_request or fk.request.get_json()
         self.response = None
@@ -146,18 +55,23 @@ class _UpdateUserBuilder:
 
     def http_test(self,status_test=None):
         return status_test or http.HTTPStatus
-
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate()
     
-    def date_handler(self,id, handler_test=None):
-        self.response = self.handler(handler_test).update(id,self.body_request)
+    def update(self,id, validator_test=None,handler_test=None,serializer_test=None,status_test=None):
+        try:
+            self.validator(validator_test).validate(self.body_request)
+            self.response = self.handler(handler_test).update(id,self.body_request)
+            return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
-    def date_serializer(self, serializer_test=None,status_test=None):
-        return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
 
-
-class _ReadAllUserBuilder:
+class ReadAllUserController:
     def __init__(self):
         self.response = None
 
@@ -173,16 +87,22 @@ class _ReadAllUserBuilder:
     def http_test(self,status_test=None):
         return status_test or http.HTTPStatus
     
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate()
+    def get_all(self,validator_test=None,handler_test=None,serializer_test=None,status_test=None):
+        try:
+            self.validator(validator_test).validate()
+            self.response = self.handler(handler_test).get_all()
+            return self.serializer(serializer_test).All_serialize(self.response),self.http_test(status_test).OK
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
-    def date_handler(self, handler_test=None):
-        self.response = self.handler(handler_test).get_all()
 
-    def date_serializer(self, serializer_test=None,status_test=None):
-        return self.serializer(serializer_test).All_serialize(self.response),self.http_test(status_test).OK
-
-class _ReadUserBuilder:
+class ReadUserController:
     def __init__(self):
         self.response = None
 
@@ -198,16 +118,21 @@ class _ReadUserBuilder:
     def http_test(self,status_test=None):
         return status_test or http.HTTPStatus
 
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate()
+    def get(self,id, validator_test=None,handler_test=None,serializer_test=None,status_test=None):
+        try:
+            self.validator(validator_test).validate()
+            self.response = self.handler(handler_test).get(id)
+            return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
-    def date_handler(self,id, handler_test=None):
-        self.response = self.handler(handler_test).get(id)
-
-    def date_serializer(self, serializer_test=None,status_test=None):
-        return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
-
-class _DeleteUserBuilder:
+class DeleteUserController:
     def __init__(self):
         self.response = None
         
@@ -223,16 +148,21 @@ class _DeleteUserBuilder:
     def http_test(self,status_test=None):
         return status_test or http.HTTPStatus
     
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate()
+    def delete(self,id, validator_test=None,handler_test=None,serializer_test=None,status_test=None):
+        try:
+            self.validator(validator_test).validate()
+            self.response = self.handler(handler_test).delete(id)
+            return self.serializer(serializer_test).serialize(id),self.http_test(status_test).OK
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
-    def date_handler(self,id, handler_test=None):
-        self.response = self.handler(handler_test).delete(id)
-
-    def date_serializer(self,id, serializer_test=None,status_test=None):
-        return self.serializer(serializer_test).serialize(id),self.http_test(status_test).OK
-
-class _LoginBuilder:
+class LoginController:
     def __init__(self,body_test=None):
         self.body_request = body_test or fk.request.get_json()
         self.response = None
@@ -240,20 +170,26 @@ class _LoginBuilder:
     def validator(self, validator_test=None):
         return validator_test or _LoginValidator()
 
-    def experience_handler(self, handler_test=None):
+    def handler(self, handler_test=None):
         return handler_test or _LoginBusinessHandler()
 
     def serializer(self, serializer_test=None):
         return serializer_test or _LoginSerializer()
+    
+    def login(self, validator_test=None,handler_test=None,serializer_test=None,status_test=None):
+        try:
+            self.validator(validator_test).validate(self.body_request)
+            self.response = self.handler(handler_test).post(self.body_request)
+            return self.serializer(serializer_test).serialize(self.response),self.http_test(status_test).OK
+        except exceptions._RequiredInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND,
+        except exceptions._InvalidInputError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._InvalidFieldError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST),http.HTTPStatus.BAD_REQUEST,
+        except exceptions._NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND),http.HTTPStatus.NOT_FOUND
 
-    def date_validator(self, validator_test=None):
-        return self.validator(validator_test).validate(self.body_request)
-
-    def date_handler(self, handler_test=None):
-        self.response = self.experience_handler(handler_test).post(self.body_request)
-
-    def date_serializer(self, serializer_test=None):
-        return self.serializer(serializer_test).serialize(self.response)
 
 class _UserValidator:
 
