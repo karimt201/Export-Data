@@ -1,4 +1,4 @@
-class _RequiredInputError(Exception):
+class RequiredInputError(Exception):
     def __init__(self, message="Missing field", attribute_name=None):
         super().__init__(message)
         self.message = message
@@ -9,7 +9,7 @@ class _RequiredInputError(Exception):
         return {"attributeName": self.attribute_name}
 
 
-class _InvalidInputError(Exception):
+class InvalidInputError(Exception):
     def __init__(self, message="Invalid field", attribute_name=None):
         super().__init__(message)
         self.message = message
@@ -20,7 +20,7 @@ class _InvalidInputError(Exception):
         return {"attributeName": self.attribute_name}
 
 
-class _NotFoundError(Exception):
+class NotFoundError(Exception):
     def __init__(self, message="User Not Found", attribute_name=None):
         super().__init__(message)
         self.message = message
@@ -30,7 +30,7 @@ class _NotFoundError(Exception):
     def data(self):
         return {"attributeName": self.attribute_name}
     
-class _InvalidFieldError(Exception):
+class InvalidFieldError(Exception):
     def __init__(self, message="Invalid field", attribute_name=None):
         super().__init__(message)
         self.message = message
@@ -40,7 +40,7 @@ class _InvalidFieldError(Exception):
     def data(self):
         return {"attributeName": self.attribute_name}
 
-class _NotImplementError(Exception):
+class NotImplementError(Exception):
     def __init__(self, message="Invalid field", attribute_name=None):
         super().__init__(message)
         self.message = message

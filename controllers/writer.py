@@ -1,4 +1,4 @@
-import helper.exceptions as exceptions
+import helpers.exceptions as exceptions
 import openpyxl as wb
 import csv
 import reportlab.platypus as platypus
@@ -7,7 +7,7 @@ import reportlab.lib.pagesizes as pagesizes
 
 class DataWriter:
     def write_export_files(self, data, filename):
-        raise exceptions._NotImplementError("children must implement this method")
+        raise exceptions.NotImplementError("children must implement this method")
 
 
 class ExcelCreator(DataWriter):

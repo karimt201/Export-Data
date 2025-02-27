@@ -7,7 +7,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 import controllers.candidate_info as candidate_info
-import exceptions
+import helpers.exceptions as exceptions
 
 
 

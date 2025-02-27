@@ -3,32 +3,21 @@ from assertpy import assert_that
 import reportlab.lib.pagesizes as pagesizes
 import openpyxl as xl
 import reportlab.lib as lib
-# import controllers.writer as writer
-# import controllers
-# from /./.controllers import writer
-# from ..controllers import writer
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
 from controllers import writer
-
-import exceptions
+import helpers.exceptions as exceptions
 
 
 class TestDataWriter(unittest.TestCase):
     
     def test_write_raise_exception(self):
         data_writer = writer.DataWriter()
-        with self.assertRaises(exceptions._NotImplementError) as write_export_files_exc:
+        with self.assertRaises(exceptions.NotImplementError) as exc:
             data_writer.write_export_files("data", "filename")
-        assert_that(str(write_export_files_exc.exception)).is_equal_to(
+        assert_that(str(exc.exception)).is_equal_to(
             "children must implement this method"
         )
         
         
-
 class TestExcelCreator(unittest.TestCase):
 
     def test_write(self):
@@ -67,7 +56,6 @@ class ExcelDataDouble:
     def __init__(self, headers, rows):
         self.header = headers
         self.rows = rows
-
 
 
 class TestCSVCreator(unittest.TestCase):
@@ -217,14 +205,6 @@ class WriterDouble:
         assert_that(self.given_data).is_equal_to(data)
         assert_that(self.given_filename).is_equal_to(filename)
 
-
-class TestError(unittest.TestCase):
-
-    def test_read(self):
-        error = writer.Error()
-        result = error.read("filename")
-        assert_that(result).is_equal_to("success")
-        
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,7 +9,7 @@ def login():
 
 @auth_blp.route("/register", methods=["POST"])
 def add_user():
-    return auth.RegisterController().register()
+    return auth.RegisterController(flask.request).register()
 
 @auth_blp.route("/users", methods=["GET"])
 def get_all_user():

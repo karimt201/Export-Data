@@ -2,19 +2,24 @@ import jwt
 import extensions
 import flask as fk
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
-import exceptions
+import helpers.exceptions as exceptions
+
 
 class Token:
-    
-    def create_token(self,payload):
-        token = jwt.encode(payload,extensions.app.config['JWT_SECRET_KEY'], algorithm='HS256')
+
+    def create_token(self, payload):
+        token = jwt.encode(
+            payload, extensions.app.config["JWT_SECRET_KEY"], algorithm="HS256"
+        )
         return token
-    
+
     def verify_token(self):
         try:
-            Auth_token = fk.request.headers.get('Authorization')
+            Auth_token = fk.request.headers.get("Authorization")
             token = Auth_token.split(" ")
-            return jwt.decode(token[1], extensions.app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+            return jwt.decode(
+                token[1], extensions.app.config["JWT_SECRET_KEY"], algorithms=["HS256"]
+            )
         except ExpiredSignatureError:
             raise exceptions._InvalidInputError("Token has expired")
         except InvalidTokenError:

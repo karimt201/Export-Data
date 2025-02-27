@@ -1,285 +1,2130 @@
+import hashlib
 import unittest
+import http
 from assertpy import assert_that
-import sys
-import os
-# import controllers.candidate_info as candidate_info
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
-import controllers.export_candidate as export_candidate
-import data_handler as dh
-import exceptions
+import helpers.exceptions as exceptions
+import controllers.candidate_info as candidate
+import services.data_handler as dh
 
 
-class TestCreateExtension(unittest.TestCase):
-    def test_create_extension(self):
-        create_extension = export_candidate.CreateExtension()
-        with self.assertRaises(exceptions._NotImplementError) as prepare_data_exc:
-            create_extension.prepare_data()
-        assert_that(str(prepare_data_exc.exception)).is_equal_to(
-            "children must implement this method"
-        )
-        with self.assertRaises(exceptions._NotImplementError) as create_file_exc:
-            create_extension.create_file("extension")
-        assert_that(str(create_file_exc.exception)).is_equal_to(
-            "children must implement this method"
-        )
-        with self.assertRaises(exceptions._NotImplementError) as save_file_exc:
-            create_extension.save_file("filename")
-        assert_that(str(save_file_exc.exception)).is_equal_to(
-            "children must implement this method"
-        )
-
-class TestCreateExtensionController(unittest.TestCase):
+class TestAddCandidateController(unittest.TestCase):
     def setUp(self):
-        self.create_extension_page_double = CreateExtensionPageDouble()
-        self.create_extension_per_page_double = CreateExtensionPerPageDouble()
-        self.create_extension_candidate_id_double = CreateExtensionCandidateIdDouble()
-        self.create_extension_handler_double = CreateExtensionHandlerDouble()
-        self.create_extension_controller = export_candidate._CreateExtensionController()
+        self.test_request = RequestDouble()
+        self.controller = AddCandidateControllerSpy(self.test_request)
         
-    def test_create_extension(self):
-        self.create_extension_controller.prepare_data(
-            self.create_extension_page_double,
-            self.create_extension_per_page_double,
-            self.create_extension_candidate_id_double,
-            self.create_extension_handler_double
-            )
-        self.create_extension_controller.create_file(self.create_extension_page_double)
-        self.create_extension_controller.save_file("filename",self.create_extension_page_double)
-        self.create_extension_page_double.assert_that_create_extension_hold_the_page("page")
-        self.create_extension_page_double.assert_that_create_extension_hold_the_type(int)
-        self.create_extension_page_double.assert_that_create_extension_hold_the_serializer_name("karim")
-        self.create_extension_page_double.assert_that_create_extension_hold_the_serializer_date("2024-2-10")
-        self.create_extension_page_double.assert_that_create_extension_hold_the_row_data_position("fullstack")
-        self.create_extension_page_double.assert_that_create_extension_hold_the_filename("filename")
-        self.create_extension_per_page_double.assert_that_create_extension_hold_the_per_page("per_page")
-        self.create_extension_per_page_double.assert_that_create_extension_hold_the_num_of_item_in_page(3)
-        self.create_extension_per_page_double.assert_that_create_extension_hold_the_type(int)
-        self.create_extension_candidate_id_double.assert_that_create_extension_hold_candidate_id("candidate_id")
-        self.create_extension_handler_double.assert_that_create_extension_hold_candidate_id("candidate_id")
+    def test_has_expected_properties(self):
+        controller = candidate.AddCandidateController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._AddCandidateValidator)
+        assert_that(controller.handler).is_instance_of(candidate._CandidateBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._CandidateSerializer)
         
     
-    def test_create_extension_candidate_id_equal_none(self):
-        create_extension_candidate_id_none_double = CreateExtensionCandidateIdNoneDouble()
+    def test_register_returns_okay(self):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.validator.assert_that_validate_body_called_with({'test': 'json'})
+        self.controller.handler.assert_that_post_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        
+    def test_register_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
 
-        self.create_extension_controller.prepare_data(
-            self.create_extension_page_double,
-            self.create_extension_per_page_double,
-            create_extension_candidate_id_none_double,
-            self.create_extension_handler_double
-            )
-        self.create_extension_controller.create_file(self.create_extension_page_double)
-        self.create_extension_controller.save_file("filename",self.create_extension_page_double)
-        self.create_extension_handler_double.assert_that_create_extension_hold_the_page("page")
-        self.create_extension_handler_double.assert_that_create_extension_hold_the_per_page("per_page")
-        create_extension_candidate_id_none_double.assert_that_create_extension_hold_candidate_id("candidate_id")
+    def test_register_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+
+
+class AddCandidateControllerSpy(candidate.AddCandidateController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestUpdateCandidateController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = UpdateCandidateControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.UpdateCandidateController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._CandidateBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._CandidateSerializer)
+        
+    def test_update_returns_okay(self):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_update_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+        
+    def test_update_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_update_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class UpdateCandidateControllerSpy(candidate.UpdateCandidateController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestReadAllCandidateController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadAllCandidateControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadAllCandidateController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._CandidateBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._CandidateSerializer)
+        
+    def test_get_all_returns_okay(self):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_all_serialize_called_with("user object")
     
-    def test_create_extension_page_equal_none(self):
-        create_extension_page_none_double = CreateExtensionPageNoneDouble()
+    def test_get_all_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_all_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadAllCandidateControllerSpy(candidate.ReadAllCandidateController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
 
-        self.create_extension_controller.prepare_data(
-            create_extension_page_none_double,
-            self.create_extension_per_page_double,
-            self.create_extension_candidate_id_double,
-            self.create_extension_handler_double
-            )
-        self.create_extension_controller.create_file(self.create_extension_page_double)
-        self.create_extension_controller.save_file("filename",self.create_extension_page_double)
-        create_extension_page_none_double.assert_that_create_extension_hold_the_page("page")
-        create_extension_page_none_double.assert_that_create_extension_hold_the_type(int)
-        create_extension_page_none_double.assert_that_create_extension_hold_the_serializer_date("2024-2-10")
-        create_extension_page_none_double.assert_that_create_extension_hold_the_serializer_name("karim")
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
     
+    
+class TestReadCandidateController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadCandidateControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadCandidateController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._CandidateBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._CandidateSerializer)
+        
+    def test_get_returns_okay(self):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
 
-class CreateExtensionPageDouble:
+    
+    def test_get_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadCandidateControllerSpy(candidate.ReadCandidateController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestDeleteCandidateController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = DeleteCandidateControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.DeleteCandidateController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._CandidateBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._DeleteSerializer)
+        
+    def test_delete_returns_okay(self):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_id_is(1)
+        self.controller.serializer.assert_that_serialize_called_with(1)
+        
+    def test_delete_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_delete_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class DeleteCandidateControllerSpy(candidate.DeleteCandidateController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestAddCandidateSkillsController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = AddCandidateSkillsControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.AddCandidateSkillsController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._AddSkillsValidator)
+        assert_that(controller.handler).is_instance_of(candidate._SkillsBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._SkillsSerializer)
+        
+    
+    def test_register_returns_okay(self):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.validator.assert_that_validate_body_called_with({'test': 'json'})
+        self.controller.handler.assert_that_post_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        
+    def test_register_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+
+    def test_register_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+
+
+class AddCandidateSkillsControllerSpy(candidate.AddCandidateSkillsController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestUpdateCandidateSkillsController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = UpdateCandidateSkillsControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.UpdateCandidateSkillsController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._SkillsBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._SkillsSerializer)
+        
+    def test_update_returns_okay(self):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_update_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+        
+    def test_update_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_update_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class UpdateCandidateSkillsControllerSpy(candidate.UpdateCandidateSkillsController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestReadAllCandidateSkillsController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadAllCandidateSkillsControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadAllCandidateSkillsController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._SkillsBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._SkillsSerializer)
+        
+    def test_get_all_returns_okay(self):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_all_serialize_called_with("user object")
+    
+    def test_get_all_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_all_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadAllCandidateSkillsControllerSpy(candidate.ReadAllCandidateSkillsController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+    
+    
+class TestReadCandidateSkillsController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadCandidateSkillsControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadCandidateSkillsController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._SkillsBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._SkillsSerializer)
+        
+    def test_get_returns_okay(self):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+
+    
+    def test_get_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadCandidateSkillsControllerSpy(candidate.ReadCandidateSkillsController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestDeleteCandidateSkillsController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = DeleteCandidateSkillsControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.DeleteCandidateSkillsController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._SkillsBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._DeleteSerializer)
+        
+    def test_delete_returns_okay(self):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_id_is(1)
+        self.controller.serializer.assert_that_serialize_called_with(1)
+        
+    def test_delete_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_delete_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class DeleteCandidateSkillsControllerSpy(candidate.DeleteCandidateSkillsController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestAddCandidateApplicationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = AddCandidateApplicationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.AddCandidateApplicationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._AddApplicationValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ApplicationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ApplicationSerializer)
+        
+    
+    def test_register_returns_okay(self):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.validator.assert_that_validate_body_called_with({'test': 'json'})
+        self.controller.handler.assert_that_post_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        
+    def test_register_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+
+    def test_register_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+
+
+class AddCandidateApplicationControllerSpy(candidate.AddCandidateApplicationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestUpdateCandidateApplicationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = UpdateCandidateApplicationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.UpdateCandidateApplicationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ApplicationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ApplicationSerializer)
+        
+    def test_update_returns_okay(self):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_update_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+        
+    def test_update_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_update_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class UpdateCandidateApplicationControllerSpy(candidate.UpdateCandidateApplicationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestReadAllCandidateApplicationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadAllCandidateApplicationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadAllCandidateApplicationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ApplicationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ApplicationSerializer)
+        
+    def test_get_all_returns_okay(self):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_all_serialize_called_with("user object")
+    
+    def test_get_all_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_all_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadAllCandidateApplicationControllerSpy(candidate.ReadAllCandidateApplicationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+    
+    
+class TestReadCandidateApplicationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadCandidateApplicationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadCandidateApplicationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ApplicationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ApplicationSerializer)
+        
+    def test_get_returns_okay(self):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+
+    
+    def test_get_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadCandidateApplicationControllerSpy(candidate.ReadCandidateApplicationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestDeleteCandidateApplicationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = DeleteCandidateApplicationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.DeleteCandidateApplicationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ApplicationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._DeleteSerializer)
+        
+    def test_delete_returns_okay(self):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_id_is(1)
+        self.controller.serializer.assert_that_serialize_called_with(1)
+        
+    def test_delete_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_delete_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class DeleteCandidateApplicationControllerSpy(candidate.DeleteCandidateApplicationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestAddCandidateExperienceController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = AddCandidateExperienceControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.AddCandidateExperienceController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._AddExperienceValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ExperienceBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ExperienceSerializer)
+        
+    
+    def test_register_returns_okay(self):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.validator.assert_that_validate_body_called_with({'test': 'json'})
+        self.controller.handler.assert_that_post_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        
+    def test_register_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+
+    def test_register_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+
+
+class AddCandidateExperienceControllerSpy(candidate.AddCandidateExperienceController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestUpdateCandidateExperienceController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = UpdateCandidateExperienceControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.UpdateCandidateExperienceController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ExperienceBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ExperienceSerializer)
+        
+    def test_update_returns_okay(self):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_update_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+        
+    def test_update_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_update_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class UpdateCandidateExperienceControllerSpy(candidate.UpdateCandidateExperienceController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestReadAllCandidateExperienceController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadAllCandidateExperienceControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadAllCandidateExperienceController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ExperienceBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ExperienceSerializer)
+        
+    def test_get_all_returns_okay(self):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_all_serialize_called_with("user object")
+    
+    def test_get_all_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_all_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadAllCandidateExperienceControllerSpy(candidate.ReadAllCandidateExperienceController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+    
+    
+class TestReadCandidateExperienceController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadCandidateExperienceControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadCandidateExperienceController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ExperienceBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._ExperienceSerializer)
+        
+    def test_get_returns_okay(self):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+
+    
+    def test_get_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadCandidateExperienceControllerSpy(candidate.ReadCandidateExperienceController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestDeleteCandidateExperienceController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = DeleteCandidateExperienceControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.DeleteCandidateExperienceController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._ExperienceBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._DeleteSerializer)
+        
+    def test_delete_returns_okay(self):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_id_is(1)
+        self.controller.serializer.assert_that_serialize_called_with(1)
+        
+    def test_delete_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_delete_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class DeleteCandidateExperienceControllerSpy(candidate.DeleteCandidateExperienceController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+class TestAddCandidateEducationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = AddCandidateEducationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.AddCandidateEducationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._AddEducationValidator)
+        assert_that(controller.handler).is_instance_of(candidate._EducationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._EducationSerializer)
+        
+    
+    def test_register_returns_okay(self):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.validator.assert_that_validate_body_called_with({'test': 'json'})
+        self.controller.handler.assert_that_post_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        
+    def test_register_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+
+    def test_register_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.create()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+
+
+class AddCandidateEducationControllerSpy(candidate.AddCandidateEducationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestUpdateCandidateEducationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = UpdateCandidateEducationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.UpdateCandidateEducationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._EducationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._EducationSerializer)
+        
+    def test_update_returns_okay(self):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_update_called_with({"test": "json"})
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+        
+    def test_update_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_update_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.update(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class UpdateCandidateEducationControllerSpy(candidate.UpdateCandidateEducationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestReadAllCandidateEducationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadAllCandidateEducationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadAllCandidateEducationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._EducationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._EducationSerializer)
+        
+    def test_get_all_returns_okay(self):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_all_serialize_called_with("user object")
+    
+    def test_get_all_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_all_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get_all()
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadAllCandidateEducationControllerSpy(candidate.ReadAllCandidateEducationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+    
+    
+class TestReadCandidateEducationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = ReadCandidateEducationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.ReadCandidateEducationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._EducationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._EducationSerializer)
+        
+    def test_get_returns_okay(self):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.serializer.assert_that_serialize_called_with("user object")
+        self.controller.handler.assert_that_id_is(1)
+
+    
+    def test_get_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_get_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.get(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class ReadCandidateEducationControllerSpy(candidate.ReadCandidateEducationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class TestDeleteCandidateEducationController(unittest.TestCase):
+    def setUp(self):
+        self.test_request = RequestDouble()
+        self.controller = DeleteCandidateEducationControllerSpy(self.test_request)
+        
+    def test_has_expected_properties(self):
+        controller = candidate.DeleteCandidateEducationController(self.test_request)
+        assert_that(controller.validator).is_instance_of(candidate._TokenValidator)
+        assert_that(controller.handler).is_instance_of(candidate._EducationBusinessHandler)
+        assert_that(controller.serializer).is_instance_of(candidate._DeleteSerializer)
+        
+    def test_delete_returns_okay(self):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("test status")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.OK)
+        self.controller.validator.assert_that_validate_token_called_with('Authorization')
+        self.controller.handler.assert_that_id_is(1)
+        self.controller.serializer.assert_that_serialize_called_with(1)
+        
+    def test_delete_returns_not_found(self):
+        self.controller.validator.validate_raised_exception = exceptions.NotFoundError("test error")
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Not Found")
+        assert_that(response.get("description")).is_equal_to("Nothing matches the given URI")
+        assert_that(response.get("message")).is_equal_to("test error")
+        assert_that(status_code).is_equal_to(http.HTTPStatus.NOT_FOUND)
+        
+    def test_delete_returns_bad_request(self):
+        self.controller.validator.validate_raised_exception = exceptions.RequiredInputError("name is required")
+        self.expect_bad_request_with_message("name is required")
+        self.controller.validator.validate_raised_exception = exceptions.InvalidInputError("name must be string")
+        self.expect_bad_request_with_message("name must be string")
+        
+    def expect_bad_request_with_message(self, message):
+        response, status_code = self.controller.delete(1)
+        assert_that(response.get("status")).is_equal_to("Bad Request")
+        assert_that(response.get("description")).is_equal_to("Bad request syntax or unsupported method")
+        assert_that(response.get("message")).is_equal_to(message)
+        assert_that(status_code).is_equal_to(http.HTTPStatus.BAD_REQUEST)
+        
+        
+class DeleteCandidateEducationControllerSpy(candidate.DeleteCandidateEducationController):
+    def __init__(self, request):
+        super().__init__(request)
+        self._validator = ValidatorDouble()
+        self._handler = BusinessHandlerDouble()
+        self._serializer = SerializerDouble()
+
+    @property
+    def validator(self):
+        return self._validator
+
+    @property
+    def handler(self):
+        return self._handler
+
+    @property
+    def serializer(self):
+        return self._serializer
+
+
+class RequestDouble:
     def __init__(self):
-        self.page = None
-        self.type = None
-        self.serializer = None
-        self.extension_file = None
-        self.row_data = None
-        self.filename = None
+        self.headers = self
+        self.given_header = None
         
-    def get(self,page,type):
-        self.page = page
-        self.type = type
-        return self.page
+    def get_json(self):
+        return {"test": "json"}
     
-    def RowExcelData(self,serializer):
-        self.serializer = serializer
-        return self.serializer
-    
-    def DataManger(self,extension_file):
-        self.extension_file = extension_file
-        return self
-    
-    def save(self,row_data,filename):
-        self.row_data = row_data
-        self.filename = filename
-        return "success"
-    
-    def assert_that_create_extension_hold_the_page(self,page):
-        assert_that(self.page).is_equal_to(page)
-    
-    def assert_that_create_extension_hold_the_type(self,type):
-        assert_that(self.type).is_equal_to(type)
-    
-    def assert_that_create_extension_hold_the_serializer_name(self,serializer_name):
-        assert_that(self.serializer[0].get('name')).is_equal_to(serializer_name)
-        
-    def assert_that_create_extension_hold_the_serializer_date(self,serializer_date):
-        assert_that(self.serializer[0].get('date')).is_equal_to(serializer_date)
-    
-    def assert_that_create_extension_hold_the_row_data_position(self,row_data):
-        assert_that(self.row_data[0].get('position')).is_equal_to(row_data)
-    
-    def assert_that_create_extension_hold_the_filename(self,filename):
-        assert_that(self.filename).is_equal_to(filename)
-    
-    
-class CreateExtensionPageNoneDouble:
+    def get(self,header):
+        self.given_header = header
+        return self.given_header
+
+
+class ValidatorDouble:
     def __init__(self):
-        self.page = None
-        self.type = None
-        self.serializer = None
-        self.extension_file = None
-        self.row_data = None
-        self.filename = None
+        self.validate_raised_exception = None
+        self.validated_called_with = None
+
+    def validate(self,token, body=None):
+        self.validated_called_with = token,body
+        if self.validate_raised_exception:
+            raise self.validate_raised_exception
+
+    def assert_that_validate_token_called_with(self,token):
+        assert_that(self.validated_called_with[0]).is_equal_to(token)
+
+    def assert_that_validate_body_called_with(self, body):
+        assert_that(self.validated_called_with[1]).is_equal_to(body)
+
+
+class BusinessHandlerDouble:
+    def __init__(self):
+        self.post_called_with = None
+        self.update_called_with = None
+        self.given_id = None
+
+    def post(self, request_body):
+        self.post_called_with = request_body
+        return "user object"
+
+    def get_all(self):
+        return "user object"
+    
+    def update(self,id, request_body):
+        self.given_id = id
+        self.update_called_with = request_body
+        return "user object"
+    
+    def get(self,id):
+        self.given_id = id
+        return "user object"
+    
+    def delete(self,id):
+        self.given_id = id
         
-    def get(self,page,type):
-        self.page = page
-        self.type = type
+    def assert_that_post_called_with(self, request_body):
+        assert_that(self.post_called_with).is_equal_to(request_body)
+    
+    def assert_that_update_called_with(self, request_body):
+        assert_that(self.update_called_with).is_equal_to(request_body)
+
+    def assert_that_id_is(self, id):
+        assert_that(self.given_id).is_equal_to(id)
+
+
+class SerializerDouble:
+    def __init__(self):
+        self.serialize_called_with = None
+        self.all_serialize_called_with = None
+
+    def serialize(self, user):
+        self.serialize_called_with = user
+        return {"status": "test status"}
+    
+    def All_serialize(self, user):
+        self.all_serialize_called_with = user
+        return {"status": "test status"}
+
+    def assert_that_serialize_called_with(self, user):
+        assert_that(self.serialize_called_with).is_equal_to(user)
+        
+    def assert_that_all_serialize_called_with(self, user):
+        assert_that(self.all_serialize_called_with).is_equal_to(user)
+
+
+class TestCandidateBusinessHandler(unittest.TestCase):
+    def setUp(self):
+        self.operator = OperatorDouble()
+        self.token = TokenDouble()
+        self.handler = candidate._CandidateBusinessHandler(self.operator, self.token)
+        self.request_body = {"email": "new@test.com", "password": "test"}
+
+    def test_post_returns_user_object(self):
+        response = self.handler.post(self.request_body)
+        self.operator.assert_that_create_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+    
+    def test_get_all_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get_all()
+        assert_that(str(exc.exception)).is_equal_to("Records does not exist")
+        
+    def test_get_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get(1)
+        assert_that(str(exc.exception)).is_equal_to("Record does not exist")
+
+    def test_update_returns_user_object(self):
+        response = self.handler.update(1, self.request_body)
+        self.operator.assert_that_update_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+        
+    def test_update_returns_user_object(self):
+        self.handler.delete(1)
+        self.operator.assert_that_get_one_called_with(1)
+        self.operator.assert_that_delete_called_with(1)
+    
+
+class TestApplicationBusinessHandler(unittest.TestCase):
+    def setUp(self):
+        self.operator = OperatorDouble()
+        self.token = TokenDouble()
+        self.handler = candidate._ApplicationBusinessHandler(self.operator, self.token)
+        self.request_body = {"email": "new@test.com", "password": "test"}
+
+    def test_post_returns_user_object(self):
+        response = self.handler.post(self.request_body)
+        self.operator.assert_that_create_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+    
+    def test_get_all_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get_all()
+        assert_that(str(exc.exception)).is_equal_to("Records does not exist")
+        
+    def test_get_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get(1)
+        assert_that(str(exc.exception)).is_equal_to("Record does not exist")
+
+    def test_update_returns_user_object(self):
+        response = self.handler.update(1, self.request_body)
+        self.operator.assert_that_update_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+        
+    def test_update_returns_user_object(self):
+        self.handler.delete(1)
+        self.operator.assert_that_get_one_called_with(1)
+        self.operator.assert_that_delete_called_with(1)
+        
+
+class TestExperienceBusinessHandler(unittest.TestCase):
+    def setUp(self):
+        self.operator = OperatorDouble()
+        self.token = TokenDouble()
+        self.handler = candidate._ExperienceBusinessHandler(self.operator, self.token)
+        self.request_body = {"email": "new@test.com", "password": "test"}
+
+    def test_post_returns_user_object(self):
+        response = self.handler.post(self.request_body)
+        self.operator.assert_that_create_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+    
+    def test_get_all_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get_all()
+        assert_that(str(exc.exception)).is_equal_to("Records does not exist")
+        
+    def test_get_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get(1)
+        assert_that(str(exc.exception)).is_equal_to("Record does not exist")
+
+    def test_update_returns_user_object(self):
+        response = self.handler.update(1, self.request_body)
+        self.operator.assert_that_update_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+        
+    def test_update_returns_user_object(self):
+        self.handler.delete(1)
+        self.operator.assert_that_get_one_called_with(1)
+        self.operator.assert_that_delete_called_with(1)
+
+
+class TestEducationBusinessHandler(unittest.TestCase):
+    def setUp(self):
+        self.operator = OperatorDouble()
+        self.token = TokenDouble()
+        self.handler = candidate._EducationBusinessHandler(self.operator, self.token)
+        self.request_body = {"email": "new@test.com", "password": "test"}
+
+    def test_post_returns_user_object(self):
+        response = self.handler.post(self.request_body)
+        self.operator.assert_that_create_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+    
+    def test_get_all_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get_all()
+        assert_that(str(exc.exception)).is_equal_to("Records does not exist")
+        
+    def test_get_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get(1)
+        assert_that(str(exc.exception)).is_equal_to("Record does not exist")
+
+    def test_update_returns_user_object(self):
+        response = self.handler.update(1, self.request_body)
+        self.operator.assert_that_update_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+        
+    def test_update_returns_user_object(self):
+        self.handler.delete(1)
+        self.operator.assert_that_get_one_called_with(1)
+        self.operator.assert_that_delete_called_with(1)
+
+        
+class TestSkillsBusinessHandler(unittest.TestCase):
+    def setUp(self):
+        self.operator = OperatorDouble()
+        self.token = TokenDouble()
+        self.handler = candidate._SkillsBusinessHandler(self.operator, self.token)
+        self.request_body = {"email": "new@test.com", "password": "test"}
+
+    def test_post_returns_user_object(self):
+        response = self.handler.post(self.request_body)
+        self.operator.assert_that_create_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+    
+    def test_get_all_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get_all()
+        assert_that(str(exc.exception)).is_equal_to("Records does not exist")
+        
+    def test_get_raise_not_found_error_if_not_return_record(self):
+        with self.assertRaises(exceptions.NotFoundError) as exc:
+            self.handler.get(1)
+        assert_that(str(exc.exception)).is_equal_to("Record does not exist")
+
+    def test_update_returns_user_object(self):
+        response = self.handler.update(1, self.request_body)
+        self.operator.assert_that_update_called_with(self.request_body)
+        assert_that(response).is_equal_to("user object")
+        self.operator.assert_that_get_one_called_with(1)
+        
+    def test_update_returns_user_object(self):
+        self.handler.delete(1)
+        self.operator.assert_that_get_one_called_with(1)
+        self.operator.assert_that_delete_called_with(1)
+    
+
+class OperatorDouble:
+    def __init__(self):
+        self.get_one_called_with = None
+        self.create_called_with = None
+        self.update_called_with = None
+        self.given_id = None
+    
+    def get_one(self,id):
+        self.given_id = id
         return None
     
-    def RowExcelData(self,serializer):
-        self.serializer = serializer
-        return self.serializer
-    
-    def DataManger(self,extension_file):
-        self.extension_file = extension_file
-        return self
-    
-    def save(self,row_data,filename):
-        self.row_data = row_data
-        self.filename = filename
-        return self.filename
-    
-    def assert_that_create_extension_hold_the_page(self,page):
-        assert_that(self.page).is_equal_to(page)
-    
-    def assert_that_create_extension_hold_the_type(self,type):
-        assert_that(self.type).is_equal_to(type)
-    
-    def assert_that_create_extension_hold_the_serializer_name(self,serializer_name):
-        assert_that(self.serializer[0].get('name')).is_equal_to(serializer_name)
-        
-    def assert_that_create_extension_hold_the_serializer_date(self,serializer_date):
-        assert_that(self.serializer[0].get('date')).is_equal_to(serializer_date)
-    
-class CreateExtensionPerPageDouble:
-    def __init__(self):
-        self.per_page = None
-        self.num_of_item_in_page = None
-        self.type = None
-    
-    def get(self,per_page,num_of_item_in_page,type):
-        self.per_page = per_page
-        self.num_of_item_in_page = num_of_item_in_page
-        self.type = type
-        return self.per_page
-    
-    def assert_that_create_extension_hold_the_per_page(self,per_page):
-        assert_that(self.per_page).is_equal_to(per_page)
-        
-    def assert_that_create_extension_hold_the_num_of_item_in_page(self,num_of_item_in_page):
-        assert_that(self.num_of_item_in_page).is_equal_to(num_of_item_in_page)
-    
-    def assert_that_create_extension_hold_the_type(self,type):
-        assert_that(self.type).is_equal_to(type)
-    
-class CreateExtensionCandidateIdDouble:
-    def __init__(self):
-        self.candidate_id = None
-
-    def get(self,candidate_id):
-        self.candidate_id = candidate_id
-        return self.candidate_id
-    
-    def assert_that_create_extension_hold_candidate_id(self,candidate_id):
-        assert_that(self.candidate_id).is_equal_to(candidate_id)
-    
-class CreateExtensionCandidateIdNoneDouble:
-    def __init__(self):
-        self.candidate_id = None
-    
-    def get(self,candidate_id):
-        self.candidate_id = candidate_id
-        return None
-    
-    def assert_that_create_extension_hold_candidate_id(self,candidate_id):
-        assert_that(self.candidate_id).is_equal_to(candidate_id)
-    
-class CreateExtensionHandlerDouble:
-    def __init__(self):
-        self.candidate_id = None
-        self.page = None
-        self.per_page = None
-        self.name = "karim"
-        self.age = 25
-        self.email = "karim@gmail.com"
-        self.phone = "01016767542"
-        self.skills = [self]
-        self.education = [self]
-        self.experience = [self]
-        self.applications = [self]
-        self.degree = "high school"
-        self.graduation_year = 2025
-        self.institution = "cairo unverisity"
-        self.company = "arete"
-        self.position = "fullstack"
-        self.start_date = "2025-2-1"
-        self.end_date = "2025-2-10"
-        self.date = "2024-2-10"
-        
-    def get(self,candidate_id):
-        self.candidate_id = candidate_id
-        return self
-    
-    def get_paginated(self,page, per_page):
-        self.page = page
-        self.per_page = per_page
-        return self
+    def create(self,request):
+        self.create_called_with = request
+        return "user object"
     
     def get_all(self):
-        return self
+        return None
     
-    def assert_that_create_extension_hold_candidate_id(self,candidate_id):
-        assert_that(self.candidate_id).is_equal_to(candidate_id)
+    def update(self,id,request):
+        self.given_id = id
+        self.update_called_with = request
+        return "user object"
+
+    def delete(self,id):
+        self.given_id = id
+        return f"user id {self.given_id}deleted"
+    
+    def assert_that_create_called_with(self, request):
+        assert_that(self.create_called_with).is_equal_to(request)
         
-    def assert_that_create_extension_hold_the_page(self,page):
-        assert_that(self.page).is_equal_to(page)
+    def assert_that_get_one_called_with(self, id):
+        assert_that(self.given_id).is_equal_to(id)  
         
-    def assert_that_create_extension_hold_the_per_page(self,per_page):
-        assert_that(self.per_page).is_equal_to(per_page)
+    def assert_that_update_called_with(self, request):
+        assert_that(self.update_called_with).is_equal_to(request)   
+        
+    def assert_that_delete_called_with(self, id):
+        assert_that(self.given_id).is_equal_to(id) 
+
+        
+class TokenDouble:
+    
+    def verify_token(self):
+        return {"user_id":1}
 
 
-class TestCandidateController(unittest.TestCase):
+class TestAddCandidateValidator(unittest.TestCase):
     def setUp(self):
-        self.candidate_request_body_double = CandidateRequestBodyDouble()
-        self.candidate_operation_double = CandidateOperationDouble()
-        self.candidate_info_double = CandidateInfoDouble()
-        self.add_candidate_double = AddCandidateDouble()
-        self.candidate_controller = export_candidate._CandidateController(self.candidate_request_body_double)
+        self.add_candidate_validator = candidate._AddCandidateValidator()
         
-    def test_candidate_controller(self):
-        self.candidate_controller.create(
-            self.candidate_operation_double,
-            self.candidate_info_double,
-            self.add_candidate_double
-            )
+    def test_add_application_validator(self):
+        token_false = False
+        token_true = True
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_candidate_validator.validate(token_false,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "token is missing"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "name is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{"name":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "name is not valid string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{"name":"karim"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "age is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{"name":"karim","age":"1"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "age is not valid int"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{"name":"karim","age":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "email is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{"name":"karim","age":1,"email":"karim"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "email is not valid"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{"name":"karim","age":1,"email":"karim@gmail.com"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "phone is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_candidate_validator.validate(token_true,{"name":"karim","age":1,"email":"karim@gmail.com","phone":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "phone must be a string number"
+        )
         
-class CandidateOperationDouble:
+        
+class TestAddApplicationValidator(unittest.TestCase):
+    def setUp(self):
+        self.add_application_validator = candidate._AddApplicationValidator()
+        
+    def test_add_application_validator(self):
+        token_false = False
+        token_true = True
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_application_validator.validate(token_false,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "token is missing"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_application_validator.validate(token_true,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "date is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_application_validator.validate(token_true,{"date":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "date is not valid string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_application_validator.validate(token_true,{"date":"2010-10-10"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_application_validator.validate(token_true,{"date":"2010-10-10","candidate_id":"karim"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is not valid int"
+        )
+
+
+class TestAddExperienceValidator(unittest.TestCase):
+    def setUp(self):
+        self.add_experience_validator = candidate._AddExperienceValidator()
+        
+    def test_add_experience_validator(self):
+        token_false = False
+        token_true = True
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_experience_validator.validate(token_false,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "token is missing"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"name":"karim"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "company is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"company":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "company is not valid string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"company":"arete"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "position is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"company":"arete","position":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "position is not valid string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_experience_validator.validate(token_true,{
+            "company":"arete",
+            "position":"backend"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "start_date is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"company":"arete","position":"backend","start_date":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "start_date is not valid date string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_experience_validator.validate(token_true,{
+            "company":"arete",
+            "position":"backend",
+            "start_date":"2010-10-10"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "end_date is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"company":"arete","position":"backend","start_date":"2010-10-10","end_date":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "end_date is not valid date string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"company":"arete","position":"backend","start_date":"2010-10-10","end_date":"2010-10-20"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_experience_validator.validate(token_true,{"company":"arete","position":"backend","start_date":"2010-10-10","end_date":"2010-10-20","candidate_id":"karim"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is not valid int"
+        )
+
+
+class TestAddEducationValidator(unittest.TestCase):
+    def setUp(self):
+        self.add_education_validator = candidate._AddEducationValidator()
+        
+    def test_add_education_validator(self):
+        token_false = False
+        token_true = True
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_education_validator.validate(token_false,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "token is missing"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_education_validator.validate(token_true,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "degree is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_education_validator.validate(token_true,{"degree":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "degree is not valid string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_education_validator.validate(token_true,{"degree":"high school"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "graduation_year is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_education_validator.validate(token_true,{"degree":"high school","graduation_year":"2023"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "graduation_year is not valid int"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_education_validator.validate(token_true,{
+            "degree":"high school",
+            "graduation_year":2023})
+        assert_that(str(exc.exception)).is_equal_to(
+            "institution is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_education_validator.validate(token_true,{"degree":"high school","graduation_year":2023,"institution":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "institution is not valid string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_education_validator.validate(token_true,{
+            "degree":"high school",
+            "graduation_year":2023,"institution":"GUC"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_education_validator.validate(token_true,{"degree":"high school","graduation_year":2023,"institution":"GUC","candidate_id":"karim"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is not valid int"
+        )
+    
+
+class TestAddSkillsValidator(unittest.TestCase):
+    def setUp(self):
+        self.add_skills_validator = candidate._AddSkillsValidator()
+        
+    def test_add_skills_validator(self):
+        token_false = False
+        token_true = True
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_skills_validator.validate(token_false,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "token is missing"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_skills_validator.validate(token_true,{})
+        assert_that(str(exc.exception)).is_equal_to(
+            "name is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_skills_validator.validate(token_true,{"name":1})
+        assert_that(str(exc.exception)).is_equal_to(
+            "name is not valid string"
+        )
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.add_skills_validator.validate(token_true,{"name":"Reading"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is required"
+        )
+        with self.assertRaises(exceptions.InvalidInputError) as exc:
+            self.add_skills_validator.validate(token_true,{"name":"Reading","candidate_id":"karim"})
+        assert_that(str(exc.exception)).is_equal_to(
+            "candidate_id is not valid int"
+        )
+        
+
+class TestTokenValidator(unittest.TestCase):
+    def setUp(self):
+        self.token_validator = candidate._TokenValidator()
+        
+    def test_token_validator(self):
+        token_false = False
+        with self.assertRaises(exceptions.RequiredInputError) as exc:
+            self.token_validator.validate(token_false)
+        assert_that(str(exc.exception)).is_equal_to(
+            "token is missing"
+        )
+        
+        
+class TestCandidateSerializer(unittest.TestCase):
+    def setUp(self):
+        self.candidate_serializer = candidate._CandidateSerializer()
+        self.candidate_serializer_double = CandidateSerializerDouble()
+
+    def test_candidate_serializer(self):
+        candidate_serializer = self.candidate_serializer.All_serialize(self.candidate_serializer_double)
+        assert_that(candidate_serializer.get('email')).is_equal_to("karim@gmail.com")
+
+
+class CandidateSerializerDouble:
     def __init__(self):
         self.id = 1
         self.name = "karim"
@@ -298,29 +2143,114 @@ class CandidateOperationDouble:
         self.start_date = "2025-2-1"
         self.end_date = "2025-2-10"
         self.date = "2024-2-10"
+
         
-    def get(self,operation):
-        return None
-    
-    def export(self,file_name):
-        return self
-    
-class CandidateInfoDouble:
-    def get(self,info):
-        return None
-    
-    def post(self):
-        return 1
+class TestApplicationSerializer(unittest.TestCase):
+    def setUp(self):
+        self.application_serializer = candidate._ApplicationSerializer()
+        self.application_serializer_double = ApplicationSerializerDouble()
 
-class CandidateRequestBodyDouble:
-    def get(self,fileName):
-        self.fileName=fileName
-        return self.fileName
+    def test_application_serializer(self):
+        application_serializer = self.application_serializer.All_serialize(self.application_serializer_double)
+        assert_that(application_serializer.get('Application_date')).is_equal_to("2010-2-2")
 
-class AddCandidateDouble:
-    def post(self,request_body):
-        self.request_body=request_body
-        return self.request_body
+
+class ApplicationSerializerDouble:
+    def __init__(self):
+        self.id = 1
+        self.date = "2010-2-2"
+        self.name = "karim"
+        self.candidate = self
+
+
+class TestExperienceSerializer(unittest.TestCase):
+    def setUp(self):
+        self.experience_serializer = candidate._ExperienceSerializer()
+        self.experience_serializer_double = ExperienceSerializerDouble()
+
+    def test_experience_serializer(self):
+        experience_serializer = self.experience_serializer.All_serialize(self.experience_serializer_double)
+        assert_that(experience_serializer.get('company')).is_equal_to("arete")
+
+
+class ExperienceSerializerDouble:
+    def __init__(self):
+        self.id = 1
+        self.company = "arete"
+        self.position = "developer"
+        self.start_date = "2010-2-2"
+        self.end_date = "2010-2-10"
+        self.name = "karim"
+        self.candidate = self
+
+
+class TestEducationSerializer(unittest.TestCase):
+    def setUp(self):
+        self.education_serializer = candidate._EducationSerializer()
+        self.education_serializer_double = EducationSerializerDouble()
+        
+    def test_experience_serializer(self):
+        education_serializer = self.education_serializer.All_serialize(self.education_serializer_double)
+        assert_that(education_serializer.get('institution')).is_equal_to("GUC")
+
+
+class EducationSerializerDouble:
+    def __init__(self):
+        self.id = 1
+        self.degree = "commerce"
+        self.graduation_year = 2023
+        self.institution = "GUC"
+        self.name = "karim"
+        self.candidate = self
+
+
+class TestSkillsSerializer(unittest.TestCase):
+    def setUp(self):
+        self.skills_serializer = candidate._SkillsSerializer()
+        self.skills_serializer_double = SkillsSerializerDouble()
+        
+    def test_skills_serializer(self):
+        skills_serializer = self.skills_serializer.All_serialize(self.skills_serializer_double)
+        assert_that(skills_serializer.get('skill_name')).is_equal_to("Reading")
+        
+        
+class SkillsSerializerDouble:
+    def __init__(self):
+        self.id = 1
+        self.name = "Reading"
+        self.candidates = [self]
+        
+        
+class TestDeleteSerializer(unittest.TestCase):
+    def setUp(self):
+        self.delete_serializer = candidate._DeleteSerializer()
+        
+    def test_delete_serializer(self):
+        delete_serializer = self.delete_serializer.serialize(1)
+        assert_that(delete_serializer.get('message')).is_equal_to("record id 1 has been removed successfully")
+        
+
+class TestErrorSerializer(unittest.TestCase):
+    def setUp(self):
+        self.error_serializer = candidate._ErrorSerialize()
+        self.error_serializer_double = ErrorDouble()
+        self.status_serializer_double = StatusDouble()
+        
+    def test_error_serializer(self):
+        error_serializer = self.error_serializer._get_serialized_response(self.error_serializer_double,self.status_serializer_double)
+        assert_that(error_serializer.get('status')).is_equal_to("phrase")
+        
+        
+class ErrorDouble:
+    def __init__(self):
+        self.message = "message"
+
+
+class StatusDouble:
+    def __init__(self):
+        self.phrase = "phrase"
+        self.description = "description"
+        
 
 class TestCrudOperator(unittest.TestCase):
     def setUp(self):
@@ -336,13 +2266,11 @@ class TestCrudOperator(unittest.TestCase):
         crud_operator.get_paginated(1,3)
         crud_operator_session_double.assert_that_crud_operator_session_get_by_id(1)
 
-        with self.assertRaises(exceptions._InvalidFieldError) as crud_operator_exc:
+        with self.assertRaises(exceptions.InvalidFieldError) as exc:
             crud_operator.create({"name":"karim"})
-        assert_that(str(crud_operator_exc.exception)).is_equal_to(
+        assert_that(str(exc.exception)).is_equal_to(
             f"name field is not valid"
         )
-        crud_operator.commit()
-        crud_operator.filter_data("karim")
         self.crud_operator_model_double.assert_that_crud_operator_model_get_by_page_number(1)
         self.crud_operator_model_double.assert_that_crud_operator_model_get_per_page(3)
         self.crud_operator_model_double.assert_that_crud_operator_model_paginate_error_out(False)
@@ -353,7 +2281,6 @@ class TestCrudOperator(unittest.TestCase):
 
         crud_operator = dh.CrudOperator(self.crud_operator_model_post_double,crud_operator_session_double)
         crud_operator.create({"id":1,"phone":"01016767542"})
-        crud_operator.create_many({"id":1,"phone":"01016767542"})
 
         crud_operator_session_double.assert_that_crud_operator_session_add_new_record_by_phone("01016767542")
         
@@ -426,190 +2353,3 @@ class CrudOperatorSessionDouble:
         
     def assert_that_crud_operator_session_add_new_record_by_phone(self,record):
         assert_that(self.record.phone).is_equal_to(record)
-
-class TestExtensionCreator(unittest.TestCase):
-    def setUp(self):
-        self.extension_creator_double = ExtensionCreatorDouble()
-        self.extension_creator = export_candidate._ExtensionCreator("csv",self.extension_creator_double)
-    def test_extension_creator(self):
-        self.extension_creator.export("filename.csv",self.extension_creator_double)
-        self.extension_creator_double.assert_that_extension_creator_hold_extension("csv")
-        self.extension_creator_double.assert_that_extension_creator_hold_extension("csv")
-        self.extension_creator_double.assert_that_extension_creator_hold_filename("filename.csv")
-        self.extension_creator_double.assert_that_extension_creator_hold_operation("csv")
-
-class ExtensionCreatorDouble:
-    def __init__(self):
-        self.extension = None
-        self.filename = None
-        
-    def prepare_data(self):
-        return "success"
-    
-    def create_file(self,extension):
-        self.extension = extension
-        return self.extension
-    
-    def save_file(self,filename):
-        self.filename = filename
-        return self.filename
-    
-    def get(self,operation):
-        self.operation = operation
-        return self.operation
-    
-    def assert_that_extension_creator_hold_extension(self,extension):
-        assert_that(self.extension).is_equal_to(extension)
-
-    def assert_that_extension_creator_hold_filename(self,filename):
-        assert_that(self.filename).is_equal_to(filename)
-        
-    def assert_that_extension_creator_hold_operation(self,operation):
-        assert_that(self.operation).is_equal_to(operation)
-    
-
-class TestCandidateBusinessHandler(unittest.TestCase):
-    def setUp(self):
-        self.candidate_business_handler_double = CandidateBusinessHandlerDouble()
-        self.candidate_business_handler = export_candidate._CandidateBusinessHandler(self.candidate_business_handler_double)
-    
-    def test_candidate_business_handler(self):
-        self.candidate_business_handler.post({"name":"karim"})
-        self.candidate_business_handler.get_all()
-        self.candidate_business_handler.get(1)
-        self.candidate_business_handler.get_paginated(1,3)
-        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_request_body({"name":"karim"})
-        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_candidate_id(1)
-        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_page(1)
-        self.candidate_business_handler_double.assert_that_candidate_business_handler_hold_per_page(3)
-
-class CandidateBusinessHandlerDouble:
-    def __init__(self):
-        self.request_body = None
-        self.id = None
-        self.page = None
-        self.per_page = None
-        
-    def create(self,request_body):
-        self.request_body = request_body
-        return "success"
-    
-    def get_all(self):
-        return "success"
-    
-    def get_one(self,id):
-        self.id = id
-        return "success"
-    
-    def get_paginated(self,page,per_page):
-        self.page = page
-        self.per_page = per_page
-        return {"page":self.page , "per_page":self.per_page}
-    
-    def assert_that_candidate_business_handler_hold_request_body(self,request_body):
-        assert_that(self.request_body).is_equal_to(request_body)
-        
-    def assert_that_candidate_business_handler_hold_candidate_id(self,id):
-        assert_that(self.id).is_equal_to(id)
-
-    def assert_that_candidate_business_handler_hold_page(self,page):
-        assert_that(self.page).is_equal_to(page)
-        
-    def assert_that_candidate_business_handler_hold_per_page(self,per_page):
-        assert_that(self.per_page).is_equal_to(per_page)
-
-class TestCreateExtensionValidator(unittest.TestCase):
-    def setUp(self):
-        self.create_extension_validator = export_candidate._CreateExtensionValidator()
-        
-    def test_add_skills_validator(self):
-        data = {
-            "filename":"learn.csv",
-        }
-        self.create_extension_validator.validate(data)
-        with self.assertRaises(exceptions._RequiredInputError) as create_extension_filename_validator_exc:
-            self.create_extension_validator.validate({})
-        assert_that(str(create_extension_filename_validator_exc.exception)).is_equal_to(
-            "filename is required"
-        )
-        with self.assertRaises(exceptions._InvalidInputError) as create_extension_filename_validator_exc:
-            self.create_extension_validator.validate({"filename":1})
-        assert_that(str(create_extension_filename_validator_exc.exception)).is_equal_to(
-            "filename is not valid string"
-        )
-        
-class TestAddCandidateValidator(unittest.TestCase):
-    def setUp(self):
-        self.add_candidate_validator = export_candidate._AddCandidateValidator()
-        
-    def test_add_candidate_validator(self):
-        data = {
-            "name":"karim",
-            "age":26,
-            "email":"karim@gmail.com",
-            "phone":"01016767542",
-        }
-        self.add_candidate_validator.validate(data)
-        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_name_validator_exc:
-            self.add_candidate_validator.validate({})
-        assert_that(str(add_candidate_name_validator_exc.exception)).is_equal_to(
-            "name is required"
-        )
-        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_name_validator_exc:
-            self.add_candidate_validator.validate({"name":1})
-        assert_that(str(add_candidate_name_validator_exc.exception)).is_equal_to(
-            "name is not valid string"
-        )
-        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_age_validator_exc:
-            self.add_candidate_validator.validate({"name":"karim"})
-        assert_that(str(add_candidate_age_validator_exc.exception)).is_equal_to(
-            "age is required"
-        )
-        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_name_validator_exc:
-            self.add_candidate_validator.validate({"name":"karim","age":"1"})
-        assert_that(str(add_candidate_name_validator_exc.exception)).is_equal_to(
-            "age is not valid int"
-        )
-        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_email_validator_exc:
-            self.add_candidate_validator.validate({"name":"karim","age":26})
-        assert_that(str(add_candidate_email_validator_exc.exception)).is_equal_to(
-            "Email is required"
-        )
-        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_email_validator_exc:
-            self.add_candidate_validator.validate({"name":"karim","age":26,"email":"karim"})
-        assert_that(str(add_candidate_email_validator_exc.exception)).is_equal_to(
-            "Email is not valid"
-        )
-        with self.assertRaises(exceptions._RequiredInputError) as add_candidate_phone_validator_exc:
-            self.add_candidate_validator.validate({"name":"karim","age":26,"email":"karim@gmail.com"})
-        assert_that(str(add_candidate_phone_validator_exc.exception)).is_equal_to(
-            "phone is required"
-        )
-        with self.assertRaises(exceptions._InvalidInputError) as add_candidate_phone_validator_exc:
-            self.add_candidate_validator.validate({"name":"karim","age":26,"email":"karim@gmail.com","phone":1})
-        assert_that(str(add_candidate_phone_validator_exc.exception)).is_equal_to(
-            "phone must be a number"
-        )
-
-class TestErrorSerialize(unittest.TestCase):
-    def setUp(self):
-        self.error_serialize = export_candidate._ErrorSerialize()
-        
-    def test_error_serialize(self):
-        self.error_serialize_status_double = ErrorSerializeStatusDouble()
-        self.error_serialize_error_double = ErrorSerializeErrorDouble()
-        self.error_serialize.core_error_serialize(self.error_serialize_error_double,self.error_serialize_status_double)
-    
-class ErrorSerializeStatusDouble:
-    def __init__(self):
-        self.status = self
-        self.phrase = "phrase"
-        
-class ErrorSerializeErrorDouble:
-    def __init__(self):
-        self.error = self
-        self.message = "message"
-        
-
-if __name__ == "__main__":
-    unittest.main()

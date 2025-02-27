@@ -1,91 +1,109 @@
 import flask as fk
 import http
-import helper.exceptions as  exceptions
+import helpers.exceptions as  exceptions
 import controllers.writer as writer
 import controllers.candidate_info as cd
 
 
 class ExportCandidateController:
+    def __init__(self, test_request=None):
+        self.request = test_request or fk.request
+        self.body_request = self.request.get_json()
+        self.token = self.request.headers.get('Authorization')
+        self.operation = self.request.args.get("operation")
 
-    def __init__(self, body_request=None):
-        self.body_request = body_request or fk.request.get_json()
-        self.response = None
-        
-    def validator(self, validator_test=None):
-        return validator_test or _CreateExtensionValidator()
     
-    def handler(self, extension_creator_test=None):
-        return extension_creator_test or _ExtensionCreator()
+    @property
+    def validator(self):
+        return _CreateExtensionValidator()
     
-    def serializer(self, serializer_test=None):
-        return serializer_test or _ExportCandidateSerializer()
+    @property
+    def handler(self):
+        return _ExtensionCreator()
     
-    def http_test(self,status_test=None):
-        return status_test or http.HTTPStatus
+    @property
+    def serializer(self):
+        return _ExportCandidateSerializer()
+    
+    def export_record(self):
+        try:
+            self.validator.validate(self.token,self.body_request)
+            response = self.handler.export_candidate(self.operation)
+            return self.serializer.All_serialize(response),http.HTTPStatus.OK
+        except exceptions.NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
+        except (exceptions.RequiredInputError, exceptions.InvalidInputError) as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST)
 
-    def export_candidate(self,validator_test=None, handler_test=None, serializer_test=None,status_test=None):
-        self.validator(validator_test).validate(self.body_request)
-        self.response = self.handler(handler_test).export_candidate()
-        return self.serializer(serializer_test).All_serialize(self.response),self.http_test(status_test).OK
 
 class ExportAllCandidateController:
+    def __init__(self, test_request=None):
+        self.request = test_request or fk.request
+        self.body_request = self.request.get_json()
+        self.token = self.request.headers.get('Authorization')
+        self.operation = self.request.args.get("operation")
 
-    def __init__(self, body_request=None):
-        self.body_request = body_request or fk.request.get_json()
-        self.response = None
         
-    def validator(self, validator_test=None):
-        return validator_test or _CreateExtensionValidator()
+    @property
+    def validator(self):
+        return _CreateExtensionValidator()
     
-    def handler(self, extension_creator_test=None):
-        return extension_creator_test or _ExtensionCreator()
+    @property
+    def handler(self):
+        return _ExtensionCreator()
     
-    def serializer(self, serializer_test=None):
-        return serializer_test or _ExportCandidateSerializer()
-    
-    def http_test(self,status_test=None):
-        return status_test or http.HTTPStatus
+    @property
+    def serializer(self):
+        return _ExportCandidateSerializer()
 
-    def export_all_candidate(self,validator_test=None, handler_test=None, serializer_test=None,status_test=None):
-        self.validator(validator_test).validate(self.body_request)
-        self.response = self.handler(handler_test).export_all_candidate()
-        return self.serializer(serializer_test).All_serialize(self.response),self.http_test(status_test).OK
+    def export_all_records(self):
+        try:
+            self.validator.validate(self.token,self.body_request)
+            response = self.handler.export_all_candidate(self.operation)
+            return self.serializer.All_serialize(response),http.HTTPStatus.OK
+        except exceptions.NotFoundError as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
+        except (exceptions.RequiredInputError, exceptions.InvalidInputError) as exc:
+            return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.BAD_REQUEST)
 
 
 class _CreateExtensionBuilder:
-    def __init__(self,writer_test=None):
-        self.write = writer_test or writer
+    def __init__(self,test_request=None):
+        self.request = test_request or fk.request
+        self.body_request = self.request.get_json()
         self.candidate = None
         self.row_data = None
         self.extension_file = None
     
-    def handler(self, business_handler_test=None):
-        return business_handler_test or cd._CandidateBusinessHandler()
+    @property
+    def writer(self):
+        return writer
     
-    def request_body(self, request_test=None):
-        return request_test or fk.request.get_json()
+    @property
+    def handler(self):
+        return cd._CandidateBusinessHandler()
+    
+    @property
+    def serializer(self):
+        return _DataSerializer()
 
-    def data_serializer(self, serializer_test=None):
-        return serializer_test or _DataSerializer()
+    def prepare_candidate_data(self):
+        candidate_id = self.body_request.get("candidate_id")
+        self.candidate = self.handler.get(candidate_id)
+        serializer = self.serializer.All_serialize(self.candidate)
+        self.row_data = self.writer.RowExcelData(serializer)
 
-    def prepare_candidate_data(self,candidate_id_test=None,handler_test=None):
-        candidate_id = self.request_body(candidate_id_test).get("candidate_id")
-        self.candidate = self.handler(handler_test).get(candidate_id)
-        serializer = self.data_serializer().All_serialize(self.candidate)
-        self.row_data = self.write.RowExcelData(serializer)
-
-    def prepare_all_candidate_data(self,handler_test=None):
-        self.candidate = self.handler(handler_test).get_all()
-        serializer = self.data_serializer().All_serialize(self.candidate)
-        self.row_data = self.write.RowExcelData(serializer)
+    def prepare_all_candidate_data(self):
+        self.candidate = self.handler.get_all()
+        serializer = self.data_serializer.All_serialize(self.candidate)
+        self.row_data = self.writer.RowExcelData(serializer)
 
     def create_file(self,extension):
-        self.extension_file = extension
+        self.manger = self.writer.DataManger(extension)
 
-    def save_file(self,request_test=None):
-        filename = self.request_body(request_test).get("filename")
-        manger = self.write.DataManger(self.extension_file)
-        manger.save(self.row_data, filename)
+    def save_file(self):
+        filename = self.body_request.get("filename")
+        self.manger.save(self.row_data, filename)
         return self.candidate
     
 
@@ -98,15 +116,19 @@ ExtensionCreator = {
 
 class _ExtensionCreator:
     
-    def __init__(self,request_test=None,operation_test=None,builder_test=None,Excel_test=None):
-        self.request = request_test or fk.request.args
-        self.extension_creator = operation_test or ExtensionCreator
-        self.create = builder_test or _CreateExtensionBuilder()
-        self.excel_creator = Excel_test or writer.ExcelCreator()
+    @property
+    def create(self):
+        return _CreateExtensionBuilder()
+    
+    @property
+    def excel_creator(self):
+        return writer.ExcelCreator()
+    
+    @property
+    def extension_creator(self):
+        return ExtensionCreator
 
-
-    def export_candidate(self):
-        operation = self.request.get("operation")
+    def export_candidate(self,operation):
         extension = self.extension_creator.get(operation)
         self.create.prepare_candidate_data()
         if operation == "xlsx":
@@ -114,9 +136,8 @@ class _ExtensionCreator:
         else:
             self.create.create_file(extension)
         return self.create.save_file()
-    
-    def export_all_candidate(self):
-        operation = self.request.get("operation")
+
+    def export_all_candidate(self,operation):
         extension = self.extension_creator.get(operation)
         self.create.prepare_all_candidate_data()
         if operation == "xlsx":
@@ -128,25 +149,23 @@ class _ExtensionCreator:
 
 # Validation
 class _CreateExtensionValidator:
-    def __init__(self,token_test=None):
-        self.token = token_test or fk.request.headers.get('Authorization')
-
-    def validate(self, body):
-        self.is_valid_token(self.token)
+    
+    def validate(self,token, body):
+        self.is_valid_token(token)
         self.is_valid_fileName(body.get("filename"))
 
     def is_valid_token(self, token):
         if not token:
-            raise exceptions._RequiredInputError("token is missing")
+            raise exceptions.RequiredInputError("token is missing")
         
     def is_valid_fileName(self, fileName):
         if not fileName:
-            raise exceptions._RequiredInputError("filename is required")
+            raise exceptions.RequiredInputError("filename is required")
         self._is_valid_fileName(fileName)
 
     def _is_valid_fileName(self, fileName):
         if not isinstance(fileName, str):
-            raise exceptions._InvalidInputError("filename is not valid string")
+            raise exceptions.InvalidInputError("filename is not valid string")
 
 # Serialization
 class _DataSerializer:

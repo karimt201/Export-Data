@@ -1,6 +1,6 @@
 import flask_sqlalchemy as alchemy
 import flask_migrate as fl_mg
-
+import datetime as dt
 
 db = alchemy.SQLAlchemy()
 migrate = fl_mg.Migrate()
@@ -13,7 +13,21 @@ candidate_skill = db.Table(
 )
 
 
-class CandidateModel(db.Model):
+class TimestampMixin:
+    created_at = db.Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
+
+class UserModel(db.Model, TimestampMixin):
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(80), unique=False, nullable=False)
+    password = db.Column(db.String(80), unique=False, nullable=False)
+    role = db.Column(db.String(80), unique=False, nullable=False)
+    candidates = db.relationship("CandidateModel",back_populates="user", cascade="all, delete-orphan")
+
+
+class CandidateModel(db.Model, TimestampMixin):
     __tablename__ = "candidates"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -21,20 +35,23 @@ class CandidateModel(db.Model):
     age = db.Column(db.Integer, unique=False, nullable=False)
     email = db.Column(db.String(80), unique=False, nullable=False)
     phone = db.Column(db.String(80), unique=False, nullable=True)
+    user_id = db.Column(db.Integer,db.ForeignKey("users.id"),nullable=False)
+    user= db.relationship("UserModel",back_populates="candidates")
     education= db.relationship("EducationModel",back_populates="candidate", cascade="all, delete-orphan")
     skills= db.relationship("SkillModel",secondary=candidate_skill,back_populates="candidates")
     experience= db.relationship("ExperienceModel",back_populates="candidate", cascade="all, delete-orphan")
     applications= db.relationship("ApplicationModel",back_populates="candidate", cascade="all, delete-orphan")
 
 
-class SkillModel(db.Model):
+class SkillModel(db.Model, TimestampMixin):
     __tablename__ = "skills"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=False, nullable=False)
     candidates= db.relationship("CandidateModel",secondary=candidate_skill,back_populates="skills")
 
-class EducationModel(db.Model):
+
+class EducationModel(db.Model, TimestampMixin):
     __tablename__ = "education"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -44,7 +61,8 @@ class EducationModel(db.Model):
     candidate_id = db.Column(db.Integer,db.ForeignKey("candidates.id"),nullable=False)
     candidate= db.relationship("CandidateModel",back_populates="education")
 
-class ExperienceModel(db.Model):
+
+class ExperienceModel(db.Model, TimestampMixin):
     __tablename__ = "experience"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -56,7 +74,7 @@ class ExperienceModel(db.Model):
     candidate= db.relationship("CandidateModel",back_populates="experience")
 
 
-class ApplicationModel(db.Model):
+class ApplicationModel(db.Model, TimestampMixin):
     __tablename__ = "applications"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -64,10 +82,4 @@ class ApplicationModel(db.Model):
     candidate_id = db.Column(db.Integer,db.ForeignKey("candidates.id"),nullable=False)
     candidate= db.relationship("CandidateModel",back_populates="applications")
 
-class UserModel(db.Model):
-    __tablename__ = "users"
-
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(80), unique=False, nullable=False)
-    password = db.Column(db.String(80), unique=False, nullable=False)
 
