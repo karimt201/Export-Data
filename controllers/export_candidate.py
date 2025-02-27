@@ -26,6 +26,12 @@ class ExportCandidateController:
         return _ExportCandidateSerializer()
     
     def export_record(self):
+        """
+        Exports a single candidate's data to a file.
+
+        :return: Serialized candidate data and HTTP status code.
+        
+        """
         try:
             self.validator.validate(self.token,self.body_request)
             response = self.handler.export_candidate(self.operation)
@@ -38,7 +44,7 @@ class ExportCandidateController:
 
 class ExportAllCandidateController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
         self.operation = self.request.args.get("operation")
@@ -57,6 +63,12 @@ class ExportAllCandidateController:
         return _ExportCandidateSerializer()
 
     def export_all_records(self):
+        """
+        Exports all candidates' data to a file.
+
+        :return: Serialized candidate data and HTTP status code.
+        
+        """
         try:
             self.validator.validate(self.token,self.body_request)
             response = self.handler.export_all_candidate(self.operation)
@@ -69,7 +81,7 @@ class ExportAllCandidateController:
 
 class _CreateExtensionBuilder:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.candidate = None
         self.row_data = None
@@ -88,20 +100,29 @@ class _CreateExtensionBuilder:
         return _DataSerializer()
 
     def prepare_candidate_data(self):
+        """Prepares data for a single candidate."""
         candidate_id = self.body_request.get("candidate_id")
         self.candidate = self.handler.get(candidate_id)
         serializer = self.serializer.All_serialize(self.candidate)
         self.row_data = self.writer.RowExcelData(serializer)
 
     def prepare_all_candidate_data(self):
+        """Prepares data for all candidates."""
         self.candidate = self.handler.get_all()
-        serializer = self.data_serializer.All_serialize(self.candidate)
+        serializer = self.serializer.All_serialize(self.candidate)
         self.row_data = self.writer.RowExcelData(serializer)
 
     def create_file(self,extension):
+        """Creates a file in the specified format."""
         self.manger = self.writer.DataManger(extension)
 
     def save_file(self):
+        """
+        Saves the file with the provided filename.
+
+        :return: The candidate data.
+        
+        """
         filename = self.body_request.get("filename")
         self.manger.save(self.row_data, filename)
         return self.candidate
@@ -129,6 +150,14 @@ class _ExtensionCreator:
         return ExtensionCreator
 
     def export_candidate(self,operation):
+        """
+        Exports a single candidate's data to a file.
+
+        :param operation: The file format to export to.
+        
+        :return: The candidate data.
+        
+        """
         extension = self.extension_creator.get(operation)
         self.create.prepare_candidate_data()
         if operation == "xlsx":
@@ -138,6 +167,14 @@ class _ExtensionCreator:
         return self.create.save_file()
 
     def export_all_candidate(self,operation):
+        """
+        Exports all candidates' data to a file.
+
+        :param operation: The file format to export to.
+        
+        :return: The candidate data.
+        
+        """
         extension = self.extension_creator.get(operation)
         self.create.prepare_all_candidate_data()
         if operation == "xlsx":
@@ -151,6 +188,14 @@ class _ExtensionCreator:
 class _CreateExtensionValidator:
     
     def validate(self,token, body):
+        """
+        Validates the token and filename.
+
+        :param token: The user token.
+        
+        :param body: The request body containing the filename.
+        
+        """
         self.is_valid_token(token)
         self.is_valid_fileName(body.get("filename"))
 
@@ -176,6 +221,14 @@ class _DataSerializer:
         return [self.serialize(candidate)]
 
     def serialize(self, candidate):
+        """
+        Serializes a single candidate for data to a file.
+
+        :param candidate: The candidate to serialize.
+        
+        :return: Serialized candidate for data to a file.
+        
+        """
         return {
             "name": candidate.name,
             "age": candidate.age,
@@ -200,6 +253,14 @@ class _ExportCandidateSerializer:
         return self.serialize(candidate)
 
     def serialize(self, candidate):
+        """
+        Serializes a single candidate.
+
+        :param candidate: The candidate to serialize.
+        
+        :return: Serialized candidate data.
+        
+        """
         return {
             "id": candidate.id,
             "name": candidate.name,
@@ -216,4 +277,3 @@ class _ExportCandidateSerializer:
             "end_date": ", ".join(experience.end_date for experience in candidate.experience),
             "date": ", ".join(applications.date for applications in candidate.applications), 
             }
-

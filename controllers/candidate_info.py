@@ -1,7 +1,6 @@
 import helpers.exceptions as exceptions
 import http
 import services.data_handler as dh
-import flask as fk
 import models as md
 import services.tokens as tk
 import re
@@ -10,7 +9,7 @@ import re
 # Controllers
 class AddCandidateController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -27,6 +26,12 @@ class AddCandidateController:
         return _CandidateSerializer()
 
     def create(self):
+        """
+        Validates input and creates a new candidate.
+        
+        Returns: Repersents the candidate details and status code
+        
+        """
         try:
             self.validator.validate(self.token,self.body_request)
             response = self.handler.post(self.body_request)
@@ -39,7 +44,7 @@ class AddCandidateController:
 
 class UpdateCandidateController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -56,6 +61,14 @@ class UpdateCandidateController:
         return  _CandidateSerializer()
 
     def update(self,id):
+        """
+        Validates input and updates a candidate.
+
+        :param id: The ID of the candidate to update.
+        
+        Returns: Repersents the candidate details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.update(id,self.body_request)
@@ -68,7 +81,7 @@ class UpdateCandidateController:
 
 class ReadAllCandidateController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -84,6 +97,12 @@ class ReadAllCandidateController:
         return _CandidateSerializer()
 
     def get_all(self):
+        """
+        Validates token and retrieves all candidates.
+        
+        Returns: Repersents all candidates details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get_all()
@@ -95,7 +114,7 @@ class ReadAllCandidateController:
 
 class ReadCandidateController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -111,6 +130,14 @@ class ReadCandidateController:
         return _CandidateSerializer()
 
     def get(self,id):
+        """
+        Validates token and retrieves a candidate by ID.
+        
+        :param id: The ID of the candidate to retrieve.
+    
+        Returns: Repersents candidate details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get(id)
@@ -123,7 +150,7 @@ class ReadCandidateController:
 
 class DeleteCandidateController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
         
     @property
@@ -139,9 +166,17 @@ class DeleteCandidateController:
         return _DeleteSerializer()
 
     def delete(self,id):
+        """
+        Validates token and delete a candidate by ID.
+                
+        :param id: The ID of the candidate to delete.
+            
+        Returns: Repersents Candidate iD deleted and status code
+        
+        """
         try:
             self.validator.validate(self.token)
-            response = self.handler.delete(id)
+            self.handler.delete(id)
             return self.serializer.serialize(id),http.HTTPStatus.OK
         except exceptions.NotFoundError as exc:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
@@ -150,7 +185,7 @@ class DeleteCandidateController:
 
 class AddCandidateSkillsController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -167,6 +202,12 @@ class AddCandidateSkillsController:
         return _SkillsSerializer()
 
     def create(self):
+        """
+        Validates input and creates a new candidate skill.
+        
+        Returns: Repersents the candidate skill details and status code
+        
+        """
         try:
             self.validator.validate(self.token,self.body_request)
             response = self.handler.post(self.body_request)
@@ -179,7 +220,7 @@ class AddCandidateSkillsController:
         
 class UpdateCandidateSkillsController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -196,6 +237,14 @@ class UpdateCandidateSkillsController:
         return _SkillsSerializer()
 
     def update(self,id):
+        """
+        Validates input and updates a candidate skill
+
+        :param id: The ID of the candidate skill to update.
+        
+        Returns: Repersents the candidate skill details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.update(id,self.body_request)
@@ -208,7 +257,7 @@ class UpdateCandidateSkillsController:
 
 class ReadAllCandidateSkillsController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -224,6 +273,12 @@ class ReadAllCandidateSkillsController:
         return _SkillsSerializer()
 
     def get_all(self):
+        """
+        Validates token and retrieves all candidate skills.
+        
+        Returns: Repersents all candidate skills details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get_all()
@@ -235,7 +290,7 @@ class ReadAllCandidateSkillsController:
 
 class ReadCandidateSkillsController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -251,6 +306,14 @@ class ReadCandidateSkillsController:
         return _SkillsSerializer()
 
     def get(self,id):
+        """
+        Validates token and retrieves a candidate skill by ID.
+        
+        :param id: The ID of the candidate skill to retrieve.
+    
+        Returns: Repersents candidate skill details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get(id)
@@ -262,7 +325,7 @@ class ReadCandidateSkillsController:
 
 class DeleteCandidateSkillsController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -278,9 +341,17 @@ class DeleteCandidateSkillsController:
         return _DeleteSerializer()
 
     def delete(self,id):
+        """
+        Validates token and delete a candidate skill by ID.
+                
+        :param id: The ID of the candidate skill to delete.
+            
+        Returns: Repersents Candidate skill iD deleted and status code
+        
+        """
         try:
             self.validator.validate(self.token)
-            response = self.handler.delete(id)
+            self.handler.delete(id)
             return self.serializer.serialize(id),http.HTTPStatus.OK
         except exceptions.NotFoundError as exc:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
@@ -290,7 +361,7 @@ class DeleteCandidateSkillsController:
     
 class AddCandidateApplicationController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -307,6 +378,12 @@ class AddCandidateApplicationController:
         return _ApplicationSerializer()
 
     def create(self):
+        """
+        Validates input and creates a new candidate application.
+        
+        Returns: Repersents the candidate application details and status code
+        
+        """
         try:
             self.validator.validate(self.token,self.body_request)
             response = self.handler.post(self.body_request)
@@ -319,7 +396,7 @@ class AddCandidateApplicationController:
     
 class UpdateCandidateApplicationController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -336,6 +413,14 @@ class UpdateCandidateApplicationController:
         return _ApplicationSerializer()
 
     def update(self,id):
+        """
+        Validates input and updates a candidate application
+
+        :param id: The ID of the candidate application to update.
+        
+        Returns: Repersents the candidate application details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.update(id,self.body_request)
@@ -347,7 +432,7 @@ class UpdateCandidateApplicationController:
 
 class ReadAllCandidateApplicationController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -363,6 +448,12 @@ class ReadAllCandidateApplicationController:
         return _ApplicationSerializer()
 
     def get_all(self):
+        """
+        Validates token and retrieves all candidate applications.
+        
+        Returns: Repersents all candidate applications details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get_all()
@@ -375,7 +466,7 @@ class ReadAllCandidateApplicationController:
 
 class ReadCandidateApplicationController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -391,6 +482,14 @@ class ReadCandidateApplicationController:
         return _ApplicationSerializer()
 
     def get(self,id):
+        """
+        Validates token and retrieves a candidate application by ID.
+        
+        :param id: The ID of the candidate application to retrieve.
+    
+        Returns: Repersents candidate application details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get(id)
@@ -402,7 +501,7 @@ class ReadCandidateApplicationController:
 
 class DeleteCandidateApplicationController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property        
@@ -418,9 +517,17 @@ class DeleteCandidateApplicationController:
         return _DeleteSerializer()
 
     def delete(self,id):
+        """
+        Validates token and delete a candidate application by ID.
+                
+        :param id: The ID of the candidate application to delete.
+            
+        Returns: Repersents Candidate application iD deleted and status code
+        
+        """
         try:
             self.validator.validate(self.token)
-            response = self.handler.delete(id)
+            self.handler.delete(id)
             return self.serializer.serialize(id),http.HTTPStatus.OK
         except exceptions.NotFoundError as exc:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
@@ -429,7 +536,7 @@ class DeleteCandidateApplicationController:
 
 class AddCandidateExperienceController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -446,6 +553,12 @@ class AddCandidateExperienceController:
         return _ExperienceSerializer()
 
     def create(self):
+        """
+        Validates input and creates a new candidate experience.
+        
+        Returns: Repersents the candidate experience details and status code
+        
+        """
         try:
             self.validator.validate(self.token,self.body_request)
             response = self.handler.post(self.body_request)
@@ -457,7 +570,7 @@ class AddCandidateExperienceController:
 
 class UpdateCandidateExperienceController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -474,6 +587,14 @@ class UpdateCandidateExperienceController:
         return _ExperienceSerializer()
 
     def update(self,id):
+        """
+        Validates input and updates a candidate experience
+
+        :param id: The ID of the candidate experience to update.
+        
+        Returns: Repersents the candidate experience details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.update(id,self.body_request)
@@ -486,7 +607,7 @@ class UpdateCandidateExperienceController:
 
 class ReadAllCandidateExperienceController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -502,6 +623,12 @@ class ReadAllCandidateExperienceController:
         return _ExperienceSerializer()
 
     def get_all(self):
+        """
+        Validates token and retrieves all candidate experience.
+        
+        Returns: Repersents all candidate experience details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get_all()
@@ -513,7 +640,7 @@ class ReadAllCandidateExperienceController:
 
 class ReadCandidateExperienceController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -529,6 +656,14 @@ class ReadCandidateExperienceController:
         return _ExperienceSerializer()
 
     def get(self,id):
+        """
+        Validates token and retrieves a candidate experience by ID.
+        
+        :param id: The ID of the candidate experience to retrieve.
+    
+        Returns: Repersents candidate experience details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get(id)
@@ -540,7 +675,7 @@ class ReadCandidateExperienceController:
 
 class DeleteCandidateExperienceController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property        
@@ -556,9 +691,17 @@ class DeleteCandidateExperienceController:
         return _DeleteSerializer()
 
     def delete(self,id):
+        """
+        Validates token and delete a candidate experience by ID.
+                
+        :param id: The ID of the candidate experience to delete.
+            
+        Returns: Repersents Candidate experience iD deleted and status code
+        
+        """
         try:
             self.validator.validate(self.token)
-            response = self.handler.delete(id)
+            self.handler.delete(id)
             return self.serializer.serialize(id),http.HTTPStatus.OK
         except exceptions.NotFoundError as exc:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
@@ -568,7 +711,7 @@ class DeleteCandidateExperienceController:
 
 class AddCandidateEducationController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -585,6 +728,12 @@ class AddCandidateEducationController:
         return _EducationSerializer()
 
     def create(self):
+        """
+        Validates input and creates a new candidate education.
+        
+        Returns: Repersents the candidate education details and status code
+        
+        """
         try:
             self.validator.validate(self.token,self.body_request)
             response = self.handler.post(self.body_request)
@@ -597,7 +746,7 @@ class AddCandidateEducationController:
 
 class UpdateCandidateEducationController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
 
@@ -614,6 +763,14 @@ class UpdateCandidateEducationController:
         return _EducationSerializer()
 
     def update(self,id):
+        """
+        Validates input and updates a candidate education.
+
+        :param id: The ID of the candidate education to update.
+        
+        Returns: Repersents the candidate education details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.update(id,self.body_request)
@@ -626,7 +783,7 @@ class UpdateCandidateEducationController:
 
 class ReadAllCandidateEducationController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -642,6 +799,12 @@ class ReadAllCandidateEducationController:
         return _EducationSerializer()
 
     def get_all(self):
+        """
+        Validates token and retrieves all candidate education.
+        
+        Returns: Repersents all candidate education details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get_all()
@@ -653,7 +816,7 @@ class ReadAllCandidateEducationController:
 
 class ReadCandidateEducationController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
 
     @property
@@ -669,6 +832,14 @@ class ReadCandidateEducationController:
         return _EducationSerializer()
 
     def get(self,id):
+        """
+        Validates token and retrieves a candidate education by ID.
+        
+        :param id: The ID of the candidate education to retrieve.
+    
+        Returns: Repersents candidate education details and status code
+        
+        """
         try:
             self.validator.validate(self.token)
             response = self.handler.get(id)
@@ -680,7 +851,7 @@ class ReadCandidateEducationController:
 
 class DeleteCandidateEducationController:
     def __init__(self,test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.token = self.request.headers.get('Authorization')
         
     @property
@@ -696,9 +867,17 @@ class DeleteCandidateEducationController:
         return _DeleteSerializer()
 
     def delete(self,id):
+        """
+        Validates token and delete a candidate education by ID.
+                
+        :param id: The ID of the candidate education to delete.
+            
+        Returns: Repersents Candidate education iD deleted and status code
+        
+        """
         try:
             self.validator.validate(self.token)
-            response = self.handler.delete(id)
+            self.handler.delete(id)
             return self.serializer.serialize(id),http.HTTPStatus.OK
         except exceptions.NotFoundError as exc:
             return _ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
@@ -713,12 +892,42 @@ class _CandidateBusinessHandler:
         self.token = token_test or tk.Token()
 
     def post(self, request_body):
+        """
+        Creates a new candidate.
+
+        :param request_body: The data for the new candidate.
+        
+        :return: The created candidate record.
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.create(request_body)
         return record
 
+    def update(self,id,request_body):
+        """
+        Updates a candidate by ID.
+
+        :param id: The ID of the candidate to update.
+        
+        :param request_body: The updated data for the candidate.
+        
+        :return: The updated candidate record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.update(id,request_body)
+        return record
+    
+
     def get_all(self):
+        """
+        Retrieves all candidates.
+
+        :return: A list of candidate records.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         records = self.operator.get_all()
@@ -727,6 +936,13 @@ class _CandidateBusinessHandler:
         return records
 
     def get(self, _id):
+        """
+        Retrieves a candidate by ID.
+
+        :param _id: The ID of the candidate to retrieve.
+        
+        :return: The candidate record.
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.get_one(_id)
@@ -734,18 +950,102 @@ class _CandidateBusinessHandler:
             raise exceptions.NotFoundError("Record does not exist")
         return record
     
-    def update(self,id,request_body):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.update(id,request_body)
-        return record
-    
     def delete(self,id):
+        """
+        Deletes a candidate by ID.
+
+        :param id: The ID of the candidate to delete.
+        
+        :return: The deleted candidate record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.delete(id)
         return record
 
+
+class _SkillsBusinessHandler:
+    def __init__(self, operator_test=None,token_test=None):
+        self.operator = operator_test or dh.CrudOperator(md.SkillModel)
+        self.token = token_test or tk.Token()
+
+    def post(self, request_body):
+        """
+        Creates a new candidate skill.
+
+        :param request_body: The data for the new candidate skill.
+        
+        :return: The created candidate skill record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.create(request_body)
+        return record    
+    
+    
+    def update(self,id,request_body):
+        """
+        Updates a candidate skill by ID.
+
+        :param id: The ID of the candidate skill to update.
+        
+        :param request_body: The updated data for the candidate skill.
+        
+        :return: The updated candidate skill record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.update(id,request_body)
+        return record
+    
+    
+    def get_all(self):
+        """
+        Retrieves all candidate skills.
+
+        :return: A list of candidate skills records.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        records = self.operator.get_all()
+        if not records:
+            raise exceptions.NotFoundError("Records does not exist")
+        return records
+    
+    def get(self, _id):
+        """
+        Retrieves a candidate skill by ID.
+
+        :param _id: The ID of the candidate skill to retrieve.
+        
+        :return: The candidate skill record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.get_one(_id)
+        if not record:
+            raise exceptions.NotFoundError("Record does not exist")
+        return record
+    
+    def delete(self,id):
+        """
+        Deletes a candidate skill by ID.
+
+        :param id: The ID of the candidate skill to delete.
+        
+        :return: The deleted candidate skill record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.delete(id)
+        return record
+    
 
 class _ApplicationBusinessHandler:
     def __init__(self, candidate_test=None,token_test=None):
@@ -753,12 +1053,43 @@ class _ApplicationBusinessHandler:
         self.token = token_test or tk.Token()
         
     def post(self, request_body):
+        """
+        Creates a new candidate application.
+
+        :param request_body: The data for the new candidate application.
+        
+        :return: The created candidate application record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.create(request_body)
         return record
     
+    def update(self,id,request_body):
+        """
+        Updates a candidate application by ID.
+
+        :param id: The ID of the candidate application to update.
+        
+        :param request_body: The updated data for the candidate application.
+        
+        :return: The updated candidate application record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.update(id,request_body)
+        return record
+    
+    
     def get_all(self):
+        """
+        Retrieves all candidate application.
+
+        :return: A list of candidate application records.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         records = self.operator.get_all()
@@ -767,6 +1098,14 @@ class _ApplicationBusinessHandler:
         return records
     
     def get(self, _id):
+        """
+        Retrieves a candidate application by ID.
+
+        :param _id: The ID of the candidate application to retrieve.
+        
+        :return: The candidate application record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.get_one(_id)
@@ -774,13 +1113,15 @@ class _ApplicationBusinessHandler:
             raise exceptions.NotFoundError("Record does not exist")
         return record
     
-    def update(self,id,request_body):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.update(id,request_body)
-        return record
-    
     def delete(self,id):
+        """
+        Deletes a candidate application by ID.
+
+        :param id: The ID of the candidate application to delete.
+        
+        :return: The deleted candidate application record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.delete(id)
@@ -793,12 +1134,43 @@ class _ExperienceBusinessHandler:
         self.token = token_test or tk.Token()
 
     def post(self, request_body):
+        """
+        Creates a new candidate experience.
+
+        :param request_body: The data for the new candidate experience.
+        
+        :return: The created candidate experience record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.create(request_body)
         return record
     
+    def update(self,id,request_body):
+        """
+        Updates a candidate experience by ID.
+
+        :param id: The ID of the candidate experience to update.
+        
+        :param request_body: The updated data for the candidate experience.
+        
+        :return: The updated candidate experience record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.update(id,request_body)
+        return record
+    
+    
     def get_all(self):
+        """
+        Retrieves all candidate experience.
+
+        :return: A list of candidate experience records.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         records = self.operator.get_all()
@@ -807,6 +1179,14 @@ class _ExperienceBusinessHandler:
         return records
     
     def get(self, _id):
+        """
+        Retrieves a candidate experience by ID.
+
+        :param _id: The ID of the candidate experience to retrieve.
+        
+        :return: The candidate experience record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.get_one(_id)
@@ -814,13 +1194,15 @@ class _ExperienceBusinessHandler:
             raise exceptions.NotFoundError("Record does not exist")
         return record
     
-    def update(self,id,request_body):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.update(id,request_body)
-        return record
-    
     def delete(self,id):
+        """
+        Deletes a candidate experience by ID.
+
+        :param id: The ID of the candidate experience to delete.
+        
+        :return: The deleted candidate experience record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.delete(id)
@@ -833,12 +1215,43 @@ class _EducationBusinessHandler:
         self.token = token_test or tk.Token()
 
     def post(self, request_body):
+        """
+        Creates a new candidate education.
+
+        :param request_body: The data for the new candidate education.
+        
+        :return: The created candidate education record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.create(request_body)
         return record
     
+    def update(self,id,request_body):
+        """
+        Updates a candidate education by ID.
+
+        :param id: The ID of the candidate education to update.
+        
+        :param request_body: The updated data for the candidate education.
+        
+        :return: The updated candidate education record.
+        
+        """
+        token = self.token.verify_token()
+        self.operator.get_one(token['user_id'])
+        record = self.operator.update(id,request_body)
+        return record
+    
+    
     def get_all(self):
+        """
+        Retrieves all candidate education.
+
+        :return: A list of candidate education records.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         records = self.operator.get_all()
@@ -847,6 +1260,14 @@ class _EducationBusinessHandler:
         return records
     
     def get(self, _id):
+        """
+        Retrieves a candidate education by ID.
+
+        :param _id: The ID of the candidate education to retrieve.
+        
+        :return: The candidate education record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.get_one(_id)
@@ -854,13 +1275,15 @@ class _EducationBusinessHandler:
             raise exceptions.NotFoundError("Record does not exist")
         return record
     
-    def update(self,id,request_body):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.update(id,request_body)
-        return record
-    
     def delete(self,id):
+        """
+        Deletes a candidate education by ID.
+
+        :param id: The ID of the candidate education to delete.
+        
+        :return: The deleted candidate education record.
+        
+        """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
         record = self.operator.delete(id)
@@ -869,51 +1292,20 @@ class _EducationBusinessHandler:
 # TODO: How to implement a good transaction ?  > Mid level
 # Lambda function, decorator
 
-class _SkillsBusinessHandler:
-    def __init__(self, operator_test=None,token_test=None):
-        self.operator = operator_test or dh.CrudOperator(md.SkillModel)
-        self.token = token_test or tk.Token()
-
-    def post(self, request_body):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.create(request_body)
-        return record    
-    
-    def get_all(self):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        records = self.operator.get_all()
-        if not records:
-            raise exceptions.NotFoundError("Records does not exist")
-        return records
-    
-    def get(self, _id):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.get_one(_id)
-        if not record:
-            raise exceptions.NotFoundError("Record does not exist")
-        return record
-    
-    def update(self,id,request_body):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.update(id,request_body)
-        return record
-    
-    def delete(self,id):
-        token = self.token.verify_token()
-        self.operator.get_one(token['user_id'])
-        record = self.operator.delete(id)
-        return record
-    
 
 EMAIL_REGEX = r"[^@]+@[^@]+\.[^@]+"
 # Validation
 class _AddCandidateValidator:
     
     def validate(self, token,body):
+        """
+        Validates the token and candidate data.
+
+        :param token: The user token.
+        
+        :param body: The candidate data to validate.
+        
+        """
         self.is_valid_token(token)
         self.is_valid_name(body.get("name"))
         self.is_valid_age(body.get("age"))
@@ -961,9 +1353,55 @@ class _AddCandidateValidator:
             raise exceptions.InvalidInputError("phone must be a string number")
 
 
+class _AddSkillsValidator:
+    
+    def validate(self,token, body):
+        """
+        Validates the token and candidate skills data.
+
+        :param token: The user token.
+        
+        :param body: The candidate skills data to validate.
+        
+        """
+        self.is_valid_token(token)
+        self.is_valid_name(body.get("name"))
+        self.is_valid_candidate_id(body.get("candidate_id"))
+
+    def is_valid_token(self, token):
+        if not token:
+            raise exceptions.RequiredInputError("token is missing")
+        
+    def is_valid_name(self, name):
+        if not name:
+            raise exceptions.RequiredInputError("name is required")
+        self._is_valid_name(name)
+
+    def _is_valid_name(self, name):
+        if not isinstance(name, str):
+            raise exceptions.InvalidInputError("name is not valid string")
+        
+    def is_valid_candidate_id(self, candidate_id):
+        if not candidate_id:
+            raise exceptions.RequiredInputError("candidate_id is required")
+        self._is_valid_candidate_id(candidate_id)
+
+    def _is_valid_candidate_id(self, candidate_id):
+        if not isinstance(candidate_id, (int)):
+            raise exceptions.InvalidInputError("candidate_id is not valid int")
+
+
 class _AddApplicationValidator:
     
     def validate(self,token, body):
+        """
+        Validates the token and candidate application data.
+
+        :param token: The user token.
+        
+        :param body: The candidate application data to validate.
+        
+        """
         self.is_valid_token(token)
         self.is_valid_date(body.get("date"))
         self.is_valid_candidate_id(body.get("candidate_id"))
@@ -994,6 +1432,14 @@ class _AddApplicationValidator:
 class _AddExperienceValidator:
     
     def validate(self,token,body):
+        """
+        Validates the token and candidate experience data.
+
+        :param token: The user token.
+        
+        :param body: The candidate data experience to validate.
+        
+        """
         self.is_valid_token(token)
         self.is_valid_company(body.get("company"))
         self.is_valid_position(body.get("position"))
@@ -1054,6 +1500,14 @@ class _AddExperienceValidator:
 class _AddEducationValidator:
     
     def validate(self,token, body):
+        """
+        Validates the token and candidate education data.
+
+        :param token: The user token.
+        
+        :param body: The candidate education data to validate.
+        
+        """
         self.is_valid_token(token)
         self.is_valid_degree(body.get("degree"))
         self.is_valid_graduation_year(body.get("graduation_year"))
@@ -1101,40 +1555,15 @@ class _AddEducationValidator:
             raise exceptions.InvalidInputError("candidate_id is not valid int")
 
 
-class _AddSkillsValidator:
-    
-    def validate(self,token, body):
-        self.is_valid_token(token)
-        self.is_valid_name(body.get("name"))
-        self.is_valid_candidate_id(body.get("candidate_id"))
-
-    def is_valid_token(self, token):
-        if not token:
-            raise exceptions.RequiredInputError("token is missing")
-        
-    def is_valid_name(self, name):
-        if not name:
-            raise exceptions.RequiredInputError("name is required")
-        self._is_valid_name(name)
-
-    def _is_valid_name(self, name):
-        if not isinstance(name, str):
-            raise exceptions.InvalidInputError("name is not valid string")
-        
-    def is_valid_candidate_id(self, candidate_id):
-        if not candidate_id:
-            raise exceptions.RequiredInputError("candidate_id is required")
-        self._is_valid_candidate_id(candidate_id)
-
-    def _is_valid_candidate_id(self, candidate_id):
-        if not isinstance(candidate_id, (int)):
-            raise exceptions.InvalidInputError("candidate_id is not valid int")
-
-
-
 class _TokenValidator:
 
     def validate(self,token):
+        """
+        Validates the token.
+
+        :param token: The user token.
+        
+        """
         self.is_valid_token(token)
 
     def is_valid_token(self, token):
@@ -1150,6 +1579,14 @@ class _CandidateSerializer:
         return self.serialize(candidate)
 
     def serialize(self, candidate):
+        """
+        Serializes a candidate.
+
+        :param candidate: The candidate to serialize.
+        
+        :return: Serialized candidate data.
+        
+        """
         return {
             "id": candidate.id,
             "name": candidate.name,
@@ -1168,6 +1605,30 @@ class _CandidateSerializer:
             }
 
 
+class _SkillsSerializer:
+
+    def All_serialize(self,skill):
+        if isinstance(skill, list):
+            return [self.serialize(user) for user in skill]
+        return self.serialize(skill)
+
+    def serialize(self, skill):
+        """
+        Serializes a candidate skill.
+
+        :param skill: The candidate skill to serialize.
+        
+        :return: Serialized candidate skill data.
+        
+        """
+        return {
+            "skill_id": skill.id,
+            "skill_name": skill.name,
+            "candidate_id": ", ".join(str(candidate.id) for candidate in skill.candidates),
+            "candidate_name": ", ".join(candidate.name for candidate in skill.candidates),
+        }
+
+
 class _ApplicationSerializer:
 
     def All_serialize(self,application):
@@ -1176,6 +1637,14 @@ class _ApplicationSerializer:
         return self.serialize(application)
     
     def serialize(self, application):
+        """
+        Serializes a candidate application.
+
+        :param application: The candidate application to serialize.
+        
+        :return: Serialized candidate application data.
+        
+        """
         return {
                 "id": application.id,
                 "Application_date": application.date,
@@ -1191,6 +1660,14 @@ class _ExperienceSerializer:
         return self.serialize(experience)
     
     def serialize(self, experience):
+        """
+        Serializes a candidate experience.
+
+        :param experience: The candidate experience to serialize.
+        
+        :return: Serialized candidate experience data.
+        
+        """
         return {
             "id": experience.id,
             "company": experience.company,
@@ -1210,6 +1687,14 @@ class _EducationSerializer:
         return self.serialize(education)
 
     def serialize(self, education):
+        """
+        Serializes a candidate education.
+
+        :param education: The candidate education to serialize.
+        
+        :return: Serialized candidate education data.
+        
+        """
         return {
             "id": education.id,
             "degree": education.degree,
@@ -1217,26 +1702,19 @@ class _EducationSerializer:
             "institution": education.institution,
             "candidate_name": education.candidate.name,
         }
-
-class _SkillsSerializer:
-
-    def All_serialize(self,skill):
-        if isinstance(skill, list):
-            return [self.serialize(user) for user in skill]
-        return self.serialize(skill)
-
-    def serialize(self, skill):
-        return {
-            "skill_id": skill.id,
-            "skill_name": skill.name,
-            "candidate_id": ", ".join(str(candidate.id) for candidate in skill.candidates),
-            "candidate_name": ", ".join(candidate.name for candidate in skill.candidates),
-        }
-
+        
         
 class _DeleteSerializer:
 
     def serialize(self, id):
+        """
+        Serializes a record Id.
+
+        :param record Id: The record Id to serialize.
+        
+        :return: Serialized record Id data.
+        
+        """
         return {
             "message":f"record id {id} has been removed successfully"
         }
@@ -1247,6 +1725,16 @@ class _ErrorSerialize:
         return self._get_serialized_response(error, status), status
 
     def _get_serialized_response(self, error, status):
+        """
+        Serializes an error response.
+
+        :param error: The error to serialize.
+        
+        :param status: The HTTP status code.
+        
+        :return: Serialized error response.
+        
+        """
         return {
             "status": status.phrase,
             "description": status.description,
