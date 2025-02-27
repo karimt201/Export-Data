@@ -1,7 +1,7 @@
 # Export Data
 
 [![Flask](https://img.shields.io/badge/Flask-2.0%2B-blue?logo=flask)](https://flask.palletsprojects.com/)
-[![Python](https://img.shields.io/badge/Python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?logo=python)](https://www.python.org/downloads/release)
+[![Python](https://img.shields.io/badge/Python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?logo=python)](https://www.python.org/downloads/)
 [![OS](https://img.shields.io/badge/OS-linux%20%7C%20windows%20%7C%20macOS-informational?logo=linux)](https://en.wikipedia.org/wiki/Operating_system)
 [![CPU](https://img.shields.io/badge/CPU-x86%20%7C%20x64%20%7C%20ARM64-orange)](https://en.wikipedia.org/wiki/List_of_CPU_architectures)
 [![Security](https://img.shields.io/badge/security-A-brightgreen)](https://owasp.org/)
