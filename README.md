@@ -17,7 +17,7 @@ This project is designed to fetch data from a database and generate reports in m
 - **PDF (.pdf)**: Create PDF reports for professional documentation and printing.
 
 ## 🛠️ Installation
-Prerequisites
+# Prerequisites
 - Python 3.8 or higher
 - Pip (Python package manager)
 
@@ -38,7 +38,7 @@ python app.py
 ```
 
 ## 🖥️ Usage
-Exporting Data
+# Exporting Data
 1. Start the application by running:
 ```bash
 python app.py
@@ -83,7 +83,7 @@ export-data/
 ```
 
 ## 📝 API Documentation
-Endpoints
+# Endpoints
 - **POST /export/excel**: Export data to Excel.
     - **Request Body:**
     ```json
