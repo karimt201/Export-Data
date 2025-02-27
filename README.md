@@ -1,15 +1,20 @@
 # Export Data
 
-![Flask](https://img.shields.io/badge/Flask-2.0%2B-blue?logo=flask)
-![Language](https://img.shields.io/badge/Language-Python-yellow?logo=python)
-![OS](https://img.shields.io/badge/OS-linux%20%7C%20windows%20%7C%20macOS-informational?logo=linux)
-![CPU](https://img.shields.io/badge/CPU-x86%20%7C%20x64%20%7C%20ARM64-orange)
-![Security](https://img.shields.io/badge/security-A-brightgreen)
-![Reliability](https://img.shields.io/badge/reliability-A-brightgreen)
-![Version](https://img.shields.io/badge/release-v1.3.1-blue)
-![Last Commit](https://img.shields.io/badge/last%20commit-February%202025-yellow)
-![License](https://img.shields.io/badge/license-MIT-blue)
+[![Flask](https://img.shields.io/badge/Flask-2.0%2B-blue?logo=flask)](https://flask.palletsprojects.com/)
+[![Language](https://img.shields.io/badge/Language-Python-yellow?logo=python)](https://www.python.org/)
+[![OS](https://img.shields.io/badge/OS-linux%20%7C%20windows%20%7C%20macOS-informational?logo=linux)](https://en.wikipedia.org/wiki/Operating_system)
+[![CPU](https://img.shields.io/badge/CPU-x86%20%7C%20x64%20%7C%20ARM64-orange)](https://en.wikipedia.org/wiki/List_of_CPU_architectures)
+[![Security](https://img.shields.io/badge/security-A-brightgreen)](https://owasp.org/)
+[![Reliability](https://img.shields.io/badge/reliability-A-brightgreen)](https://en.wikipedia.org/wiki/Software_quality)
+[![Last Commit](https://img.shields.io/badge/last%20commit-February%202025-yellow)](https://github.com/karimt201/Export-Data/tree/Generate-date-files)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
+### 🐍 **Supported Python Versions**
+[![Python 3.8](https://img.shields.io/badge/Python-3.8-blue?logo=python)](https://www.python.org/downloads/release/python-380/)  
+[![Python 3.9](https://img.shields.io/badge/Python-3.9-blue?logo=python)](https://www.python.org/downloads/release/python-390/)  
+[![Python 3.10](https://img.shields.io/badge/Python-3.10-blue?logo=python)](https://www.python.org/downloads/release/python-3100/)  
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/downloads/release/python-3110/)  
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://www.python.org/downloads/release/python-3120/)  
 
 ## 📌 Overview
 This project is designed to fetch data from a database and generate reports in multiple formats, including Excel (.xlsx), CSV (.csv), and PDF (.pdf). It provides a flexible and scalable solution for exporting data, making it suitable for various use cases such as data analysis, reporting, and sharing.
