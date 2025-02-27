@@ -80,6 +80,7 @@ export-data/
 ├── README.md # Project documentation
 ├── requirements.txt # List of dependencies
 └── swagger.yaml # Swagger/OpenAPI documentation
+```
 
 ## 📝 API Documentation
 Endpoints
