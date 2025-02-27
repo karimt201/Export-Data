@@ -1,5 +1,16 @@
 # Export Data
- 
+
+![Flask](https://img.shields.io/badge/Flask-2.0%2B-blue?logo=flask)
+![Language](https://img.shields.io/badge/Language-Python-yellow?logo=python)
+![OS](https://img.shields.io/badge/OS-linux%20%7C%20windows%20%7C%20macOS-informational?logo=linux)
+![CPU](https://img.shields.io/badge/CPU-x86%20%7C%20x64%20%7C%20ARM64-orange)
+![Security](https://img.shields.io/badge/security-A-brightgreen)
+![Reliability](https://img.shields.io/badge/reliability-A-brightgreen)
+![Version](https://img.shields.io/badge/release-v1.3.1-blue)
+![Last Commit](https://img.shields.io/badge/last%20commit-February%202025-yellow)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+
 ## 📌 Overview
 This project is designed to fetch data from a database and generate reports in multiple formats, including Excel (.xlsx), CSV (.csv), and PDF (.pdf). It provides a flexible and scalable solution for exporting data, making it suitable for various use cases such as data analysis, reporting, and sharing.
 
@@ -17,7 +28,7 @@ This project is designed to fetch data from a database and generate reports in m
 - **PDF (.pdf)**: Create PDF reports for professional documentation and printing.
 
 ## 🛠️ Installation
-# Prerequisites
+Prerequisites
 - Python 3.8 or higher
 - Pip (Python package manager)
 
@@ -38,7 +49,7 @@ python app.py
 ```
 
 ## 🖥️ Usage
-# Exporting Data
+Exporting Data
 1. Start the application by running:
 ```bash
 python app.py
@@ -61,29 +72,28 @@ python app.py
 ## 📁 Project Structure
 ```plaintext
 export-data/
-├── controllers/ # Contains business logic and controllers
-├── helpers/ # Utility functions and exception handling
-├── instance/ # sqlite file
-├── migrations/ # Database migration files
-├── models/ # Database models
-├── resourses/ # Resource files (e.g., templates, static files)
-├── routes/ # API routes and endpoints
-├── services/ # Services for data handling and business logic
-├── tests/ # Test cases and testing utilities
-├── env/ # Environment-specific files (e.g., virtual environment)
-├── .flaskenv # Flask environment configuration
-├── .gitattributes # Git attributes configuration
-├── .gitignore # Git ignore configuration
-├── app.py # Main application entry point
-├── config.py # Configuration file (e.g., database connection)
-├── extensions.py # Flask extensions and plugins
-├── README.md # Project documentation
+├── controllers/     # Contains business logic and controllers
+├── helpers/         # Utility functions and exception handling
+├── instance/        # sqlite file
+├── migrations/      # Database migration files
+├── models/          # Database models
+├── resourses/       # Resource files (e.g., templates, static files)
+├── routes/          # API routes and endpoints
+├── services/        # Services for data handling and business logic
+├── tests/           # Test cases and testing utilities
+├── env/             # Environment-specific files (e.g., virtual environment)
+├── .flaskenv        # Flask environment configuration
+├── .gitignore       # Git ignore configuration
+├── app.py           # Main application entry point
+├── config.py        # Configuration file (e.g., database connection)
+├── extensions.py    # Flask extensions and plugins
+├── README.md        # Project documentation
 ├── requirements.txt # List of dependencies
-└── swagger.yaml # Swagger/OpenAPI documentation
+└── swagger.yaml     # Swagger/OpenAPI documentation
 ```
 
 ## 📝 API Documentation
-# Endpoints
+Endpoints
 - **POST /export/excel**: Export data to Excel.
     - **Request Body:**
     ```json
