@@ -87,6 +87,8 @@ flowchart LR
     _DataSerializer["_DataSerializer"]
     RowExcelData["RowExcelData"]
     DataManger["DataManger"]
+
+    
     
     %% Relationships
     CurdOperation --> _CandidateController

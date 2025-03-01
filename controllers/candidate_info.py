@@ -1366,7 +1366,6 @@ class _AddSkillsValidator:
         """
         self.is_valid_token(token)
         self.is_valid_name(body.get("name"))
-        self.is_valid_candidate_id(body.get("candidate_id"))
 
     def is_valid_token(self, token):
         if not token:
@@ -1381,15 +1380,6 @@ class _AddSkillsValidator:
         if not isinstance(name, str):
             raise exceptions.InvalidInputError("name is not valid string")
         
-    def is_valid_candidate_id(self, candidate_id):
-        if not candidate_id:
-            raise exceptions.RequiredInputError("candidate_id is required")
-        self._is_valid_candidate_id(candidate_id)
-
-    def _is_valid_candidate_id(self, candidate_id):
-        if not isinstance(candidate_id, (int)):
-            raise exceptions.InvalidInputError("candidate_id is not valid int")
-
 
 class _AddApplicationValidator:
     
@@ -1593,6 +1583,8 @@ class _CandidateSerializer:
             "age": candidate.age,
             "email": candidate.email,
             "phone": candidate.phone,
+            "created_at": candidate.created_at,
+            "updated_at": candidate.updated_at,
             "skills": ", ".join(skill.name for skill in candidate.skills),
             "degree": ", ".join(education.degree for education in candidate.education),
             "graduation_year": ", ".join(str(education.graduation_year) for education in candidate.education),
@@ -1624,6 +1616,8 @@ class _SkillsSerializer:
         return {
             "skill_id": skill.id,
             "skill_name": skill.name,
+            "created_at": skill.created_at,
+            "updated_at": skill.updated_at,
             "candidate_id": ", ".join(str(candidate.id) for candidate in skill.candidates),
             "candidate_name": ", ".join(candidate.name for candidate in skill.candidates),
         }
@@ -1648,6 +1642,8 @@ class _ApplicationSerializer:
         return {
                 "id": application.id,
                 "Application_date": application.date,
+                "created_at": application.created_at,
+                "updated_at": application.updated_at,
                 "candidate_name": application.candidate.name,
             }
 
@@ -1674,6 +1670,8 @@ class _ExperienceSerializer:
             "position": experience.position,
             "start_date": experience.start_date,
             "end_date": experience.end_date,
+            "created_at": experience.created_at,
+            "updated_at": experience.updated_at,
             "candidate_id": experience.candidate.id,
             "candidate_name": experience.candidate.name,
         }
@@ -1698,6 +1696,8 @@ class _EducationSerializer:
         return {
             "id": education.id,
             "degree": education.degree,
+            "created_at": education.created_at,
+            "updated_at": education.updated_at,
             "graduation_year": education.graduation_year,
             "institution": education.institution,
             "candidate_name": education.candidate.name,

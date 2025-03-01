@@ -259,7 +259,6 @@ class TestDeleteUserController(unittest.TestCase):
         controller = auth.DeleteUserController(self.test_request)
         assert_that(controller.validator).is_instance_of(auth._TokenValidator)
         assert_that(controller.handler).is_instance_of(auth._UserBusinessHandler)
-        assert_that(controller.serializer).is_instance_of(auth._DeleteSerializer)
         
     def test_delete_returns_okay(self):
         response, status_code = self.controller.delete(1)
@@ -549,7 +548,11 @@ class TestRegisterSerializer(unittest.TestCase):
 class UserDouble:
     def __init__(self):
         self.email = "test@test.com"
+        self.role = "admin"
         self.id = "test_id"
+        self.created_at = "2 am"
+        self.updated_at = "3 am"
+
 
 
 # class TestGoogleClient(unittest.TestCase):

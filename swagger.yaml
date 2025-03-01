@@ -2,7 +2,9 @@ openapi: 3.0.3
 info:
   title: Export-Data API
   version: 1.0.0
-  description: API for managing candidates, their applications, skills, education, and experience.
+  description: >
+    API for managing candidates, their applications, skills, education, and experience.
+
 servers:
   - url: http://127.0.0.1:5000
     description: Local server
@@ -23,13 +25,11 @@ paths:
               properties:
                 email:
                   type: string
-                  example: karim@gmail.com
+                  example: omar@gmail.com
                 password:
                   type: string
                   example: qwerty
-                role:
-                  type: string
-                  example: Admin
+                
       responses:
         '200':
           description: Successful login
@@ -42,7 +42,7 @@ paths:
                     type: string
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-  /user:
+  /register:
     post:
       tags:
         - User
@@ -61,10 +61,14 @@ paths:
                 password:
                   type: string
                   example: qwerty
+                role:
+                  type: string
+                  example: Admin
       responses:
         '201':
           description: User registered successfully
-    
+  
+  /users:  
     get:
       tags:
         - User
@@ -82,7 +86,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/User'      
   
-  /user/{id}:
+  /users/{id}:
     get:
       tags:
         - User
@@ -127,6 +131,13 @@ paths:
                 email:
                   type: string
                   example: "karim@gmail.com"
+                password:
+                  type: string
+                  example: qwerty
+                role:
+                  type: string
+                  example: Admin
+                  
       responses:
         '200':
           description: User updated successfully
@@ -149,7 +160,7 @@ paths:
           description: User deleted successfully
 
   
-  /candidate:
+  /candidates:
     post:
       tags:
         - Candidate
@@ -176,6 +187,9 @@ paths:
                 phone:
                   type: string
                   example: "01010101001"
+                user_id:
+                  type: integer
+                  example: 1
       responses:
         '201':
           description: Candidate added successfully
@@ -197,7 +211,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Candidate'
 
-  /candidate/{id}:
+  /candidates/{id}:
     get:
       tags:
         - Candidate
@@ -263,7 +277,7 @@ paths:
         '204':
           description: Candidate deleted successfully
 
-  /candidate/application:
+  /candidates/application:
     post:
       tags:
         - Application
@@ -306,7 +320,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Application'
 
-  /candidate/application/{id}:
+  /candidates/application/{id}:
     get:
       tags:
         - Application
@@ -373,7 +387,7 @@ paths:
         '204':
           description: Application deleted successfully
 
-  /candidate/skills:
+  /candidates/skills:
     post:
       tags:
         - Skills
@@ -391,9 +405,7 @@ paths:
                 name:
                   type: string
                   example: playing
-                candidate_id:
-                  type: integer
-                  example: 1
+                
       responses:
         '201':
           description: Skill added successfully
@@ -415,7 +427,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Skill'
 
-  /candidate/skills/{id}:
+  /candidates/skills/{id}:
     get:
       tags:
         - Skills
@@ -481,7 +493,7 @@ paths:
         '204':
           description: Skill deleted successfully
 
-  /candidate/education:
+  /candidates/education:
     post:
       tags:
         - Education
@@ -529,7 +541,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Education'
 
-  /candidate/education/{education_id}:
+  /candidates/education/{id}:
     get:
       tags:
         - Education
@@ -538,7 +550,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: education_id
+        - name: id
           in: path
           required: true
           schema:
@@ -559,7 +571,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: education_id
+        - name: id
           in: path
           required: true
           schema:
@@ -586,7 +598,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: education_id
+        - name: id
           in: path
           required: true
           schema:
@@ -595,7 +607,7 @@ paths:
         '204':
           description: Education deleted successfully
 
-  /candidate/experience:
+  /candidates/experience:
     post:
       tags:
         - Experience
@@ -648,7 +660,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Experience'
 
-  /candidate/experience/{id}:
+  /candidates/experience/{id}:
     get:
       tags:
         - Experience
@@ -805,6 +817,8 @@ components:
           type: string
         phone:
           type: string
+        user_id:
+          type: integer
 
     Application:
       type: object
@@ -824,8 +838,6 @@ components:
           type: integer
         name:
           type: string
-        candidate_id:
-          type: integer
 
     Education:
       type: object

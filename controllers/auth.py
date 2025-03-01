@@ -255,7 +255,7 @@ class _UserBusinessHandler:
         """
         token = self.token.verify_token()
         self.operator.get_one(token['user_id'])
-        decoded_password = request_body.get("password").encode('utf-8')
+        decoded_password = request_body.get("password")
         if decoded_password :
             hashed_password = hashlib.sha256(decoded_password).hexdigest()
             request_body['password'] = hashed_password
@@ -383,7 +383,6 @@ class _LoginValidator:
         """
         self.is_valid_email(body.get("email"))
         self.is_valid_password(body.get("password"))
-        self.is_valid_role(body.get("role"))
 
     def is_valid_email(self, email):
         if not email:
@@ -398,9 +397,6 @@ class _LoginValidator:
         if not password:
             raise exceptions.RequiredInputError("password is required")
         
-    def is_valid_role(self, role):
-        if not role:
-            raise exceptions.RequiredInputError("role is required")
 
 
         
@@ -423,6 +419,10 @@ class _UserSerializer:
         return {
             "user":user.id,
             "email":user.email,
+            "role":user.role,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at,
+
         }
         
 class _RegisterSerializer:
@@ -439,6 +439,9 @@ class _RegisterSerializer:
         return {
             "user":user.id,
             "email":user.email,
+            "role":user.role,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at,
             'message': f'user id {user.id} registered successfully!'
         }
 

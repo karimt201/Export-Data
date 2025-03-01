@@ -84,6 +84,7 @@ class TestExportAllCandidateController(unittest.TestCase):
         self.controller.validator.assert_that_validate_token_called_with('Authorization')
         self.controller.validator.assert_that_validate_body_called_with({'test': 'json'})
         self.controller.handler.assert_that_export_candidate_called_with("operation")
+        self.controller.handler.assert_that_body_called_with({'test': 'json'})
         self.controller.serializer.assert_that_all_serialize_called_with("user object")
 
     def test_register_returns_not_found(self):
@@ -204,14 +205,17 @@ class ValidatorDouble:
 class BusinessHandlerDouble:
     def __init__(self):
         self.given_operation = None
+        self.given_body = None
         self.given_candidate_id = None
 
-    def export_candidate(self, operation):
+    def export_candidate(self, operation,body):
         self.given_operation = operation
+        self.given_body = body
         return "user object"
     
-    def export_all_candidate(self, operation):
+    def export_all_candidate(self, operation,body):
         self.given_operation = operation
+        self.given_body = body
         return "user object"
     
     def get(self,candidate_id):
@@ -226,7 +230,13 @@ class BusinessHandlerDouble:
         
     def assert_that_get_called_with(self, candidate_id):
         assert_that(self.given_candidate_id).is_equal_to(candidate_id)
-    
+        
+    def assert_that_export_all_candidate_called_with(self, operation):
+        assert_that(self.given_operation).is_equal_to(operation)
+        
+    def assert_that_body_called_with(self, body):
+        assert_that(self.given_body).is_equal_to(body)
+            
 class SerializerDouble:
     def __init__(self):
         self.serialize_called_with = None

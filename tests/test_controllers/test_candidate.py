@@ -2089,16 +2089,7 @@ class TestAddSkillsValidator(unittest.TestCase):
         assert_that(str(exc.exception)).is_equal_to(
             "name is not valid string"
         )
-        with self.assertRaises(exceptions.RequiredInputError) as exc:
-            self.add_skills_validator.validate(token_true,{"name":"Reading"})
-        assert_that(str(exc.exception)).is_equal_to(
-            "candidate_id is required"
-        )
-        with self.assertRaises(exceptions.InvalidInputError) as exc:
-            self.add_skills_validator.validate(token_true,{"name":"Reading","candidate_id":"karim"})
-        assert_that(str(exc.exception)).is_equal_to(
-            "candidate_id is not valid int"
-        )
+        
         
 
 class TestTokenValidator(unittest.TestCase):
@@ -2143,6 +2134,9 @@ class CandidateSerializerDouble:
         self.start_date = "2025-2-1"
         self.end_date = "2025-2-10"
         self.date = "2024-2-10"
+        self.created_at = "2 am"
+        self.updated_at = "3 am"
+
 
         
 class TestApplicationSerializer(unittest.TestCase):
@@ -2160,6 +2154,8 @@ class ApplicationSerializerDouble:
         self.id = 1
         self.date = "2010-2-2"
         self.name = "karim"
+        self.created_at = "2 am"
+        self.updated_at = "3 am"
         self.candidate = self
 
 
@@ -2181,6 +2177,8 @@ class ExperienceSerializerDouble:
         self.start_date = "2010-2-2"
         self.end_date = "2010-2-10"
         self.name = "karim"
+        self.created_at = "2 am"
+        self.updated_at = "3 am"
         self.candidate = self
 
 
@@ -2201,6 +2199,8 @@ class EducationSerializerDouble:
         self.graduation_year = 2023
         self.institution = "GUC"
         self.name = "karim"
+        self.created_at = "2 am"
+        self.updated_at = "3 am"
         self.candidate = self
 
 
@@ -2217,6 +2217,9 @@ class TestSkillsSerializer(unittest.TestCase):
 class SkillsSerializerDouble:
     def __init__(self):
         self.id = 1
+        self.name = "Reading"
+        self.created_at = "2 am"
+        self.updated_at = "3 am"
         self.name = "Reading"
         self.candidates = [self]
         

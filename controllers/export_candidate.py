@@ -1,13 +1,12 @@
-import flask as fk
 import http
-import helpers.exceptions as  exceptions
+import helpers.exceptions as exceptions
 import controllers.writer as writer
 import controllers.candidate_info as cd
 
 
 class ExportCandidateController:
     def __init__(self, test_request=None):
-        self.request = test_request or fk.request
+        self.request = test_request
         self.body_request = self.request.get_json()
         self.token = self.request.headers.get('Authorization')
         self.operation = self.request.args.get("operation")
@@ -28,13 +27,13 @@ class ExportCandidateController:
     def export_record(self):
         """
         Exports a single candidate's data to a file.
-
+        
         :return: Serialized candidate data and HTTP status code.
         
         """
         try:
             self.validator.validate(self.token,self.body_request)
-            response = self.handler.export_candidate(self.operation)
+            response = self.handler.export_candidate(self.operation,self.body_request)
             return self.serializer.All_serialize(response),http.HTTPStatus.OK
         except exceptions.NotFoundError as exc:
             return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
@@ -71,7 +70,7 @@ class ExportAllCandidateController:
         """
         try:
             self.validator.validate(self.token,self.body_request)
-            response = self.handler.export_all_candidate(self.operation)
+            response = self.handler.export_all_candidate(self.operation,self.body_request)
             return self.serializer.All_serialize(response),http.HTTPStatus.OK
         except exceptions.NotFoundError as exc:
             return cd._ErrorSerialize().core_error_serialize(exc, http.HTTPStatus.NOT_FOUND)
@@ -80,9 +79,7 @@ class ExportAllCandidateController:
 
 
 class _CreateExtensionBuilder:
-    def __init__(self,test_request=None):
-        self.request = test_request
-        self.body_request = self.request.get_json()
+    def __init__(self):
         self.candidate = None
         self.row_data = None
         self.extension_file = None
@@ -99,9 +96,9 @@ class _CreateExtensionBuilder:
     def serializer(self):
         return _DataSerializer()
 
-    def prepare_candidate_data(self):
+    def prepare_candidate_data(self,body):
         """Prepares data for a single candidate."""
-        candidate_id = self.body_request.get("candidate_id")
+        candidate_id = body.get("candidate_id")
         self.candidate = self.handler.get(candidate_id)
         serializer = self.serializer.All_serialize(self.candidate)
         self.row_data = self.writer.RowExcelData(serializer)
@@ -114,17 +111,18 @@ class _CreateExtensionBuilder:
 
     def create_file(self,extension):
         """Creates a file in the specified format."""
-        self.manger = self.writer.DataManger(extension)
+        self.extension_file = extension
 
-    def save_file(self):
+    def save_file(self,body):
         """
         Saves the file with the provided filename.
 
         :return: The candidate data.
-        
+
         """
-        filename = self.body_request.get("filename")
-        self.manger.save(self.row_data, filename)
+        filename = body.get("filename")
+        manger = self.writer.DataManger(self.extension_file)
+        manger.save(self.row_data, filename)
         return self.candidate
     
 
@@ -136,10 +134,8 @@ ExtensionCreator = {
 }
 
 class _ExtensionCreator:
-    
-    @property
-    def create(self):
-        return _CreateExtensionBuilder()
+    def __init__(self):
+        self.create = _CreateExtensionBuilder()
     
     @property
     def excel_creator(self):
@@ -149,7 +145,7 @@ class _ExtensionCreator:
     def extension_creator(self):
         return ExtensionCreator
 
-    def export_candidate(self,operation):
+    def export_candidate(self,operation,body):
         """
         Exports a single candidate's data to a file.
 
@@ -159,14 +155,14 @@ class _ExtensionCreator:
         
         """
         extension = self.extension_creator.get(operation)
-        self.create.prepare_candidate_data()
+        self.create.prepare_candidate_data(body)
         if operation == "xlsx":
             self.create.create_file(self.excel_creator)
         else:
             self.create.create_file(extension)
-        return self.create.save_file()
+        return self.create.save_file(body)
 
-    def export_all_candidate(self,operation):
+    def export_all_candidate(self,operation,body):
         """
         Exports all candidates' data to a file.
 
@@ -181,7 +177,7 @@ class _ExtensionCreator:
             self.create.create_file(self.excel_creator)
         else:
             self.create.create_file(extension)
-        return self.create.save_file()
+        return self.create.save_file(body)
 
 
 # Validation
